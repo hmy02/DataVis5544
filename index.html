@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AidData Network Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --panel: #121826;
+      --panel-2: #0f1522;
+      --text: #e6e9ef;
+      --muted: #a4acb9;
+      --accent: #6aa9ff;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow: hidden;
+    }
+    #container {
+      display: grid;
+      grid-template-columns: 64% 36%;
+      grid-template-rows: 50% 50%;
+      gap: 12px;
+      height: 100vh;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 10px 12px;
+      font-size: 14px;
+      letter-spacing: 0.3px;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .panel-body {
+      position: absolute;
+      inset: 40px 0 0 0;
+    }
+
+    #vis1 { grid-row: 1 / span 2; }
+    #vis2 { grid-column: 2; grid-row: 1; }
+    #vis3 { grid-column: 2; grid-row: 2; }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 12px 8px 12px;
+    }
+
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(18,24,38,0.95);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+      color: var(--text);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      line-height: 1.4;
+      z-index: 1000;
+      transform: translate(-50%, -120%);
+      white-space: nowrap;
+    }
+
+    .legend {
+      position: absolute;
+      right: 8px;
+      top: 48px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: rgba(0,0,0,0.2);
+      padding: 6px 8px;
+      border-radius: 8px;
+    }
+
+    .button-row {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .btn {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .btn.active { border-color: var(--accent); color: var(--accent); }
+
+    .empty {
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      color: var(--muted); font-size: 13px;
+    }
+
+    svg { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="vis1" class="panel">
+      <div class="panel-header">
+        <div>Vis 1 — Overview (Directed Chord)</div>
+        <div class="button-row">
+          <div id="resetBtn" class="btn">Reset selection</div>
+        </div>
+      </div>
+      <div class="hint">Hover ribbons/arcs for details. Click a ribbon to see purposes (Vis2) and yearly trend (Vis3). Click a country arc to see its time-varying partners (Vis3).</div>
+      <div class="panel-body"><svg id="chordSvg"></svg></div>
+      <div id="chordLegend" class="legend"></div>
+    </div>
+
+    <div id="vis2" class="panel">
+      <div class="panel-header">
+        <div>Vis 2 — Purposes (Top 5)</div>
+      </div>
+      <div class="hint" id="vis2Hint">Select a ribbon or country.</div>
+      <div class="panel-body"><svg id="purposeSvg"></svg></div>
+      <div id="vis2Empty" class="empty">No selection yet</div>
+    </div>
+
+    <div id="vis3" class="panel">
+      <div class="panel-header">
+        <div>Vis 3 — Time Variation</div>
+        <div class="button-row">
+          <div id="modeAmt" class="btn active">Amount</div>
+          <div id="modeShare" class="btn">Share</div>
+        </div>
+      </div>
+      <div class="hint" id="vis3Hint">Select a ribbon (pair) or country.</div>
+      <div class="panel-body"><svg id="timeSvg"></svg></div>
+      <div id="vis3Empty" class="empty">No selection yet</div>
+    </div>
+  </div>
+
+<script>
+/** =========================
+ *  Config + State
+ *  ========================= */
+const DATA_URL = "./aiddata-countries-only - aiddata-countries-only.csv";
+
+const TOP_N_DONORS = 20;
+const TOP_N_RECIP  = 10;
+const TOP_N_PURPOSE = 5;
+
+let raw = [];
+let dataFiltered = [];
+let topDonors = [];
+let topRecipients = [];
+let topPurposes = [];
+let nodes = [];
+let nodeIndex = new Map();
+
+let selectedPair = null;     // {donor, recipient}
+let selectedCountry = null;  // string
+let timeWindow = null;       // [y0,y1] or null
+let timeMode = "amount";     // "amount" or "share"
+
+/** =========================
+ *  Utilities
+ *  ========================= */
+const fmtUSD = d3.format("$.3s");
+const fmtPct = d3.format(".1%");
+
+function normalizePurpose(name) {
+  if (!name) return "unknown";
+  return name.toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[.]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sumBy(group, value) {
+  return d3.rollup(group, v => d3.sum(v, d => d[value]));
+}
+
+/** =========================
+ *  Load + Prepare
+ *  ========================= */
+d3.csv(DATA_URL, d => ({
+  year: +d.year,
+  donor: d.donor,
+  recipient: d.recipient,
+  amount: +d.commitment_amount_usd_constant,
+  purpose_raw: d.coalesced_purpose_name,
+  purpose: normalizePurpose(d.coalesced_purpose_name)
+})).then(rows => {
+  raw = rows.filter(d => d.amount > 0 && !Number.isNaN(d.amount));
+  prepareTopLists();
+  buildNodes();
+  filterToTopCountries();
+  computeTopPurposes(); // within filtered top countries
+  renderChord();
+  attachGlobalUI();
+});
+
+function prepareTopLists(){
+  const donorTotals = d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.donor);
+  const recipTotals = d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.recipient);
+
+  topDonors = Array.from(donorTotals, ([k,v]) => ({k,v}))
+    .sort((a,b)=>d3.descending(a.v,b.v))
+    .slice(0, TOP_N_DONORS)
+    .map(d=>d.k);
+
+  topRecipients = Array.from(recipTotals, ([k,v]) => ({k,v}))
+    .sort((a,b)=>d3.descending(a.v,b.v))
+    .slice(0, TOP_N_RECIP)
+    .map(d=>d.k);
+}
+
+function buildNodes(){
+  const set = new Set([...topDonors, ...topRecipients]);
+  nodes = Array.from(set);
+  nodes.sort(d3.ascending);
+  nodeIndex = new Map(nodes.map((n,i)=>[n,i]));
+}
+
+function filterToTopCountries(){
+  dataFiltered = raw.filter(d => topDonors.includes(d.donor) && topRecipients.includes(d.recipient));
+}
+
+function computeTopPurposes(){
+  const purposeTotals = d3.rollup(
+    dataFiltered,
+    v => d3.sum(v, d => d.amount),
+    d => d.purpose
+  );
+  topPurposes = Array.from(purposeTotals, ([k,v])=>({k,v}))
+    .sort((a,b)=>d3.descending(a.v,b.v))
+    .slice(0, TOP_N_PURPOSE)
+    .map(d=>d.k);
+}
+
+/** =========================
+ *  VIS 1: CHORD
+ *  ========================= */
+function buildMatrix(windowYears=null){
+  let df = dataFiltered;
+  if (windowYears){
+    const [y0,y1] = windowYears;
+    df = df.filter(d => d.year>=y0 && d.year<=y1);
+  }
+
+  const mat = Array.from({length:nodes.length}, ()=>Array(nodes.length).fill(0));
+  for (const d of df){
+    const i = nodeIndex.get(d.donor);
+    const j = nodeIndex.get(d.recipient);
+    if (i==null || j==null) continue;
+    mat[i][j] += d.amount;
+  }
+  return mat;
+}
+
+function renderChord(){
+  const svg = d3.select("#chordSvg");
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const outerRadius = Math.min(w, h) * 0.38;
+  const innerRadius = outerRadius - 18;
+
+  const g = svg.append("g").attr("transform", `translate(${w/2},${h/2})`);
+
+  const matrix = buildMatrix(timeWindow);
+
+  const chord = d3.chord()
+    .padAngle(0.02)
+    .sortSubgroups(d3.descending)
+    (matrix);
+
+  const color = d3.scaleOrdinal()
+    .domain(nodes)
+    .range(d3.schemeTableau10.concat(d3.schemeSet3).slice(0, nodes.length));
+
+  // arcs (groups)
+  const arcGen = d3.arc()
+    .innerRadius(innerRadius)
+    .outerRadius(outerRadius);
+
+  const groups = g.append("g")
+    .selectAll("g")
+    .data(chord.groups)
+    .join("g")
+    .attr("class","group");
+
+  groups.append("path")
+    .attr("d", arcGen)
+    .attr("fill", d => color(nodes[d.index]))
+    .attr("fill-opacity", 0.9)
+    .attr("stroke", "rgba(255,255,255,0.2)")
+    .style("cursor","pointer")
+    .on("mouseover", (event,d)=>onArcHover(event,d, chord, color))
+    .on("mousemove", moveTooltip)
+    .on("mouseout", onMouseOut)
+    .on("click", (event,d)=>onArcClick(nodes[d.index]));
+
+  // labels
+  groups.append("text")
+    .each(d => d.angle = (d.startAngle + d.endAngle)/2)
+    .attr("dy",".35em")
+    .attr("transform", d => `
+      rotate(${d.angle*180/Math.PI - 90})
+      translate(${outerRadius+8})
+      ${d.angle>Math.PI ? "rotate(180)" : ""}`)
+    .attr("text-anchor", d => d.angle>Math.PI ? "end":"start")
+    .style("font-size","10px")
+    .style("fill", "#d7dbe3")
+    .text(d => nodes[d.index]);
+
+  // ribbons
+  const ribbonGen = d3.ribbon().radius(innerRadius);
+
+  g.append("g")
+    .attr("class","ribbons")
+    .selectAll("path")
+    .data(chord)
+    .join("path")
+    .attr("class","ribbon")
+    .attr("d", ribbonGen)
+    .attr("fill", d => color(nodes[d.source.index]))
+    .attr("fill-opacity", 0.7)
+    .attr("stroke", "rgba(255,255,255,0.1)")
+    .style("cursor","pointer")
+    .on("mouseover", (event,d)=>onRibbonHover(event,d, color))
+    .on("mousemove", moveTooltip)
+    .on("mouseout", onMouseOut)
+    .on("click", (event,d)=>onRibbonClick(d, color));
+
+  drawChordLegend(color);
+}
+
+function onArcHover(event, d, chord, color){
+  const country = nodes[d.index];
+
+  // dim all ribbons then highlight those touching the arc
+  d3.selectAll(".ribbon")
+    .attr("fill-opacity", r => (r.source.index===d.index || r.target.index===d.index) ? 0.9 : 0.08);
+
+  const outgoing = d3.sum(chord, r => r.source.index===d.index ? r.source.value : 0);
+  const incoming = d3.sum(chord, r => r.target.index===d.index ? r.target.value : 0);
+
+  showTooltip(event, `
+    <b>${country}</b><br/>
+    Outgoing: ${fmtUSD(outgoing)}<br/>
+    Incoming: ${fmtUSD(incoming)}
+  `);
+}
+
+function onRibbonHover(event, d, color){
+  d3.selectAll(".ribbon").attr("fill-opacity", 0.08);
+  d3.select(event.currentTarget).attr("fill-opacity", 0.95);
+
+  const donor = nodes[d.source.index];
+  const recip = nodes[d.target.index];
+  const val = d.source.value;
+  showTooltip(event, `
+    <b>${donor} → ${recip}</b><br/>
+    Total: ${fmtUSD(val)}
+  `);
+}
+
+function onRibbonClick(d, color){
+  selectedPair = { donor: nodes[d.source.index], recipient: nodes[d.target.index] };
+  selectedCountry = null;
+  highlightSelection(color);
+  updatePurposes();
+  updateTimeVis();
+}
+
+function onArcClick(country){
+  selectedCountry = country;
+  selectedPair = null;
+  highlightSelection();
+  updatePurposes();
+  updateTimeVis();
+}
+
+function highlightSelection(color=null){
+  // clear highlight styles
+  d3.selectAll(".ribbon").classed("selected", false);
+  d3.selectAll(".group path").attr("stroke-width", 1);
+
+  if (selectedPair){
+    d3.selectAll(".ribbon")
+      .classed("selected", r => nodes[r.source.index]===selectedPair.donor && nodes[r.target.index]===selectedPair.recipient)
+      .attr("fill-opacity", r => (nodes[r.source.index]===selectedPair.donor && nodes[r.target.index]===selectedPair.recipient) ? 0.95 : 0.25);
+  } else if (selectedCountry){
+    d3.selectAll(".group path")
+      .attr("stroke-width", g => nodes[g.index]===selectedCountry ? 3 : 1)
+      .attr("stroke", g => nodes[g.index]===selectedCountry ? "#fff" : "rgba(255,255,255,0.2)");
+    d3.selectAll(".ribbon").attr("fill-opacity", 0.6);
+  } else {
+    d3.selectAll(".ribbon").attr("fill-opacity", 0.7);
+  }
+
+  // toggle empties
+  d3.select("#vis2Empty").style("display", (selectedPair||selectedCountry)?"none":"flex");
+  d3.select("#vis3Empty").style("display", (selectedPair||selectedCountry)?"none":"flex");
+}
+
+function drawChordLegend(color){
+  const legend = d3.select("#chordLegend");
+  legend.selectAll("*").remove();
+  const sample = nodes.slice(0, Math.min(nodes.length, 12));
+  sample.forEach(n=>{
+    const row = legend.append("div").style("display","flex").style("gap","6px").style("align-items","center");
+    row.append("div").style("width","10px").style("height","10px").style("background", color(n)).style("border-radius","2px");
+    row.append("div").text(n);
+  });
+  if (nodes.length>12) legend.append("div").text("…");
+}
+
+/** =========================
+ *  VIS 2: PURPOSES (stacked bar)
+ *  ========================= */
+function updatePurposes(){
+  const svg = d3.select("#purposeSvg");
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+
+  const pad = {top: 18, right: 14, bottom: 24, left: 14};
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+
+  const g = svg.append("g").attr("transform", `translate(${pad.left},${pad.top})`);
+
+  let title = "";
+  let series = [];
+
+  if (selectedPair){
+    title = `${selectedPair.donor} → ${selectedPair.recipient}`;
+    const df = dataFiltered.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
+    const totals = d3.rollup(df, v => d3.sum(v, d => d.amount), d => d.purpose);
+
+    // keep only topPurposes + other
+    let other = 0;
+    series = topPurposes.map(p => ({purpose:p, amount: totals.get(p)||0}));
+    for (const [p,v] of totals){
+      if (!topPurposes.includes(p)) other += v;
+    }
+    if (other>0) series.push({purpose:"other", amount: other});
+  } else if (selectedCountry){
+    // For a country selection, show outgoing purposes if any, else incoming purposes
+    const out = dataFiltered.filter(d => d.donor===selectedCountry);
+    const inc = dataFiltered.filter(d => d.recipient===selectedCountry);
+    const outSum = d3.sum(out,d=>d.amount);
+    const incSum = d3.sum(inc,d=>d.amount);
+    const df = outSum>=incSum ? out : inc;
+    title = outSum>=incSum ? `${selectedCountry} outgoing purposes` : `${selectedCountry} incoming purposes`;
+    const totals = d3.rollup(df, v => d3.sum(v, d => d.amount), d => d.purpose);
+
+    let other = 0;
+    series = topPurposes.map(p => ({purpose:p, amount: totals.get(p)||0}));
+    for (const [p,v] of totals){
+      if (!topPurposes.includes(p)) other += v;
+    }
+    if (other>0) series.push({purpose:"other", amount: other});
+  } else {
+    return;
+  }
+
+  d3.select("#vis2Hint").text(title);
+
+  const total = d3.sum(series, d=>d.amount);
+  const x = d3.scaleLinear().domain([0,total]).range([0, innerW]);
+
+  const color = d3.scaleOrdinal()
+    .domain(series.map(d=>d.purpose))
+    .range(d3.schemeSet2.concat(d3.schemeTableau10));
+
+  let acc = 0;
+  g.selectAll("rect")
+    .data(series)
+    .join("rect")
+    .attr("x", d => { const x0 = x(acc); acc += d.amount; return x0; })
+    .attr("y", innerH/2 - 20)
+    .attr("width", d => x(d.amount))
+    .attr("height", 40)
+    .attr("fill", d => color(d.purpose))
+    .on("mouseover", (event,d)=>{
+      showTooltip(event, `<b>${d.purpose}</b><br/>${fmtUSD(d.amount)} (${fmtPct(d.amount/total)})`);
+    })
+    .on("mousemove", moveTooltip)
+    .on("mouseout", onMouseOut);
+
+  // axis
+  g.append("g")
+    .attr("transform", `translate(0, ${innerH/2 + 26})`)
+    .call(d3.axisBottom(x).ticks(5).tickFormat(fmtUSD))
+    .call(g => g.selectAll("text").style("fill", "#cbd2dc"))
+    .call(g => g.selectAll("line").style("stroke", "rgba(255,255,255,0.12)"))
+    .call(g => g.selectAll("path").style("stroke", "rgba(255,255,255,0.25)"));
+
+  // legend
+  const leg = g.append("g").attr("transform", `translate(0,0)`);
+  const legItems = series.map(d=>d.purpose);
+  legItems.forEach((p,i)=>{
+    const row = leg.append("g").attr("transform", `translate(${(i%2)*innerW/2}, ${Math.floor(i/2)*16})`);
+    row.append("rect").attr("width",10).attr("height",10).attr("fill", color(p)).attr("y",-8);
+    row.append("text").text(p).attr("x",14).attr("y",1).style("font-size","11px").style("fill","#cbd2dc");
+  });
+}
+
+/** =========================
+ *  VIS 3: TIME VARIATION
+ *  ========================= */
+function updateTimeVis(){
+  const svg = d3.select("#timeSvg");
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const pad = {top: 18, right: 12, bottom: 44, left: 44};
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+
+  const g = svg.append("g").attr("transform", `translate(${pad.left},${pad.top})`);
+
+  if (!selectedPair && !selectedCountry) return;
+
+  const years = d3.extent(raw, d=>d.year);
+  const yearRange = d3.range(years[0], years[1]+1);
+
+  if (selectedPair){
+    d3.select("#vis3Hint").text(`${selectedPair.donor} → ${selectedPair.recipient}, yearly total`);
+    const df = dataFiltered.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
+    const byYear = d3.rollup(df, v => d3.sum(v, d=>d.amount), d=>d.year);
+    const series = yearRange.map(y=>({year:y, value: byYear.get(y)||0}));
+
+    const x = d3.scaleLinear().domain(years).range([0, innerW]);
+    const y = d3.scaleLinear().domain([0, d3.max(series, d=>d.value)*1.05]).nice().range([innerH, 0]);
+
+    g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(fmtUSD))
+      .call(g => g.selectAll("text").style("fill","#cbd2dc"))
+      .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
+      .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
+
+    g.append("g").attr("transform", `translate(0,${innerH})`)
+      .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
+      .call(g => g.selectAll("text").style("fill","#cbd2dc"))
+      .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
+      .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
+
+    const area = d3.area()
+      .x(d=>x(d.year))
+      .y0(innerH)
+      .y1(d=>y(d.value));
+
+    const line = d3.line()
+      .x(d=>x(d.year))
+      .y(d=>y(d.value));
+
+    g.append("path").datum(series).attr("d", area).attr("fill","rgba(106,169,255,0.25)");
+    g.append("path").datum(series).attr("d", line).attr("fill","none").attr("stroke","#6aa9ff").attr("stroke-width",2);
+
+    // hover points
+    const bisect = d3.bisector(d=>d.year).left;
+    svg.on("mousemove", (event)=>{
+      const [mx,my] = d3.pointer(event, g.node());
+      const yr = Math.round(x.invert(mx));
+      const i = bisect(series, yr);
+      const d = series[Math.max(0, Math.min(series.length-1, i))];
+      showTooltip(event, `<b>${d.year}</b><br/>${fmtUSD(d.value)}`);
+    }).on("mouseout", onMouseOut);
+
+    // no brush in pair mode
+    return;
+  }
+
+  // country mode -> stacked area of partners
+  const out = dataFiltered.filter(d => d.donor===selectedCountry);
+  const inc = dataFiltered.filter(d => d.recipient===selectedCountry);
+  const outSum = d3.sum(out,d=>d.amount);
+  const incSum = d3.sum(inc,d=>d.amount);
+  const isOutgoing = outSum>=incSum;
+  const df = isOutgoing ? out : inc;
+  const partners = isOutgoing ? topRecipients : topDonors;
+  const partnerField = isOutgoing ? "recipient" : "donor";
+  const title = isOutgoing
+    ? `${selectedCountry} → recipients over time`
+    : `donors → ${selectedCountry} over time`;
+  d3.select("#vis3Hint").text(title);
+
+  // Build wide data: year x partner amounts
+  const wide = yearRange.map(y=>{
+    const row = {year:y};
+    partners.forEach(p=>row[p]=0);
+    return row;
+  });
+
+  const byYearPartner = d3.rollups(
+    df,
+    v => d3.sum(v, d=>d.amount),
+    d=>d.year, d=>d[partnerField]
+  );
+  const mapYP = new Map(byYearPartner.map(([y, arr]) => [y, new Map(arr)]));
+
+  for (const row of wide){
+    const mp = mapYP.get(row.year);
+    if (mp){
+      for (const p of partners){
+        row[p] = mp.get(p) || 0;
+      }
+    }
+  }
+
+  // Convert to shares if needed
+  let stackInput = wide;
+  if (timeMode==="share"){
+    stackInput = wide.map(r=>{
+      const total = d3.sum(partners, p=>r[p]);
+      const nr = {year:r.year};
+      partners.forEach(p=>nr[p]= total>0 ? r[p]/total : 0);
+      return nr;
+    });
+  }
+
+  const stack = d3.stack().keys(partners)(stackInput);
+  const maxY = timeMode==="share" ? 1 : d3.max(stack, s => d3.max(s, d=>d[1]));
+  const x = d3.scaleLinear().domain(years).range([0, innerW]);
+  const y = d3.scaleLinear().domain([0, maxY]).nice().range([innerH, 0]);
+
+  const color = d3.scaleOrdinal()
+    .domain(partners)
+    .range(d3.schemeTableau10.concat(d3.schemeSet3).slice(0, partners.length));
+
+  const area = d3.area()
+    .x(d=>x(d.data.year))
+    .y0(d=>y(d[0]))
+    .y1(d=>y(d[1]));
+
+  g.append("g")
+    .selectAll("path")
+    .data(stack)
+    .join("path")
+    .attr("d", area)
+    .attr("fill", d=>color(d.key))
+    .attr("fill-opacity", 0.85)
+    .on("mouseover", (event,d)=>{
+      showTooltip(event, `<b>${d.key}</b>`);
+      d3.select(event.currentTarget).attr("fill-opacity",1);
+    })
+    .on("mousemove", moveTooltip)
+    .on("mouseout", (event)=>{
+      onMouseOut();
+      d3.select(event.currentTarget).attr("fill-opacity",0.85);
+    });
+
+  g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(timeMode==="share"?fmtPct:fmtUSD))
+    .call(g => g.selectAll("text").style("fill","#cbd2dc"))
+    .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
+    .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
+
+  g.append("g").attr("transform", `translate(0,${innerH})`)
+    .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
+    .call(g => g.selectAll("text").style("fill","#cbd2dc"))
+    .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
+    .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
+
+  // simple legend (top 6)
+  const legKeys = partners.slice(0,6);
+  const leg = g.append("g").attr("transform","translate(0,-6)");
+  legKeys.forEach((p,i)=>{
+    const row = leg.append("g").attr("transform",`translate(${i*innerW/6},0)`);
+    row.append("rect").attr("width",10).attr("height",10).attr("fill", color(p)).attr("y",-10);
+    row.append("text").text(p).attr("x",14).attr("y",-1).style("font-size","10px").style("fill","#cbd2dc");
+  });
+
+  // Brush (time window)
+  const brushH = 26;
+  const brushY = innerH + 8;
+  const xBrush = x.copy();
+
+  const brushG = g.append("g").attr("transform", `translate(0,${brushY})`);
+  brushG.append("g").call(
+    d3.axisBottom(xBrush).ticks(6).tickFormat(d3.format("d"))
+  ).call(g => g.selectAll("text").style("fill","#9aa3b2").style("font-size","9px"))
+   .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.08)"))
+   .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.15)"));
+
+  const brush = d3.brushX()
+    .extent([[0, 0], [innerW, brushH]])
+    .on("end", ({selection})=>{
+      if (!selection){
+        timeWindow = null;
+      } else {
+        const y0 = Math.round(xBrush.invert(selection[0]));
+        const y1 = Math.round(xBrush.invert(selection[1]));
+        timeWindow = [Math.min(y0,y1), Math.max(y0,y1)];
+      }
+      renderChord(); // update vis1 using window
+      highlightSelection();
+    });
+
+  brushG.append("g").attr("class","brush").call(brush);
+}
+
+/** =========================
+ *  Global UI
+ *  ========================= */
+function attachGlobalUI(){
+  d3.select("#resetBtn").on("click", ()=>{
+    selectedPair = null;
+    selectedCountry = null;
+    timeWindow = null;
+    renderChord();
+    highlightSelection();
+    updatePurposes();
+    updateTimeVis();
+    d3.select("#vis2Hint").text("Select a ribbon or country.");
+    d3.select("#vis3Hint").text("Select a ribbon (pair) or country.");
+  });
+
+  d3.select("#modeAmt").on("click", ()=>{
+    timeMode="amount";
+    d3.select("#modeAmt").classed("active",true);
+    d3.select("#modeShare").classed("active",false);
+    updateTimeVis();
+  });
+
+  d3.select("#modeShare").on("click", ()=>{
+    timeMode="share";
+    d3.select("#modeAmt").classed("active",false);
+    d3.select("#modeShare").classed("active",true);
+    updateTimeVis();
+  });
+}
+
+/** =========================
+ *  Tooltip helpers
+ *  ========================= */
+let tooltip = null;
+
+function showTooltip(event, html){
+  if (!tooltip){
+    tooltip = d3.select("body").append("div").attr("class","tooltip");
+  }
+  tooltip.html(html).style("opacity",1);
+  moveTooltip(event);
+}
+
+function moveTooltip(event){
+  if (!tooltip) return;
+  const [x,y] = d3.pointer(event, document.body);
+  tooltip.style("left", x+"px").style("top", y+"px");
+}
+
+function onMouseOut(){
+  if (tooltip) tooltip.style("opacity",0);
+  d3.selectAll(".ribbon").attr("fill-opacity", 0.7);
+}
+</script>
+</body>
+</html>
