@@ -49,17 +49,18 @@
     }
     .panel-body {
       position: absolute;
-      inset: 40px 0 0 0;
+      inset: 72px 0 0 0;
     }
 
     #vis1 { grid-row: 1 / span 2; }
     #vis2 { grid-column: 2; grid-row: 1; }
     #vis3 { grid-column: 2; grid-row: 2; }
 
-    .hint {
+    .hint{
       font-size: 12px;
       color: var(--muted);
       padding: 0 12px 8px 12px;
+      padding-right: 150px;
     }
 
     .tooltip {
@@ -81,7 +82,7 @@
     .legend {
       position: absolute;
       right: 8px;
-      top: 48px;
+      top: 84px;
       font-size: 11px;
       color: var(--muted);
       display: flex;
@@ -90,6 +91,8 @@
       background: rgba(0,0,0,0.2);
       padding: 6px 8px;
       border-radius: 8px;
+      max-height: calc(100% - 100px);
+      overflow: auto;
     }
 
     .button-row {
@@ -272,21 +275,44 @@ function buildMatrix(windowYears=null){
   return mat;
 }
 
+function buildMatricesForChord(windowYears=null){
+  const base = buildMatrix(windowYears); // donor->recipient only
+  const n = base.length;
+
+  // incoming = column sums
+  const incoming = Array(n).fill(0);
+  for (let i = 0; i < n; i++){
+    for (let j = 0; j < n; j++){
+      incoming[j] += base[i][j];
+    }
+  }
+
+  // adjusted: add incoming to diagonal so arc width = outgoing + incoming
+  const adjusted = base.map(row => row.slice());
+  for (let i = 0; i < n; i++){
+    adjusted[i][i] += incoming[i];
+  }
+
+  return { base, adjusted, incoming };
+}
+
+
 function renderChord(){
   const svg = d3.select("#chordSvg");
   svg.selectAll("*").remove();
 
-  const w = svg.node().clientWidth;
-  const h = svg.node().clientHeight;
-  const outerRadius = Math.min(w, h) * 0.38;
-  const innerRadius = outerRadius - 18;
+  const width = svg.node().clientWidth;
+  const height = svg.node().clientHeight;
+  const innerRadius = Math.min(width, height) * 0.35;
+  const outerRadius = innerRadius * 1.1;
 
-  const g = svg.append("g").attr("transform", `translate(${w/2},${h/2})`);
+  svg.attr("viewBox", [-width/2, -height/2, width, height]);
+  const root = svg.append("g");
 
-  const matrix = buildMatrix(timeWindow);
+  const matrix = buildMatrix(timeWindow); // ✅ 只用 base
 
-  const chord = d3.chord()
-    .padAngle(0.02)
+  const chord = d3.chordDirected()
+    .padAngle(0.03)
     .sortSubgroups(d3.descending)
     (matrix);
 
@@ -294,54 +320,53 @@ function renderChord(){
     .domain(nodes)
     .range(d3.schemeTableau10.concat(d3.schemeSet3).slice(0, nodes.length));
 
-  // arcs (groups)
-  const arcGen = d3.arc()
+  const arc = d3.arc()
     .innerRadius(innerRadius)
     .outerRadius(outerRadius);
 
-  const groups = g.append("g")
+  const ribbon = d3.ribbonArrow()
+    .radius(innerRadius - 1)
+    .padAngle(1 / innerRadius);
+
+  const group = root.append("g")
     .selectAll("g")
     .data(chord.groups)
     .join("g")
     .attr("class","group");
 
-  groups.append("path")
-    .attr("d", arcGen)
+  group.append("path")
     .attr("fill", d => color(nodes[d.index]))
-    .attr("fill-opacity", 0.9)
-    .attr("stroke", "rgba(255,255,255,0.2)")
+    .attr("stroke", d => d3.rgb(color(nodes[d.index])).darker())
+    .attr("d", arc)
     .style("cursor","pointer")
-    .on("mouseover", (event,d)=>onArcHover(event,d, chord, color))
+    .on("mouseover", (event,d)=>onArcHover(event,d, chord, color)) // 用你原来的 onArcHover
     .on("mousemove", moveTooltip)
     .on("mouseout", onMouseOut)
     .on("click", (event,d)=>onArcClick(nodes[d.index]));
 
-  // labels
-  groups.append("text")
-    .each(d => d.angle = (d.startAngle + d.endAngle)/2)
-    .attr("dy",".35em")
+  group.append("text")
+    .each(d => (d.angle = (d.startAngle + d.endAngle)/2))
+    .attr("dy","0.35em")
     .attr("transform", d => `
-      rotate(${d.angle*180/Math.PI - 90})
-      translate(${outerRadius+8})
-      ${d.angle>Math.PI ? "rotate(180)" : ""}`)
-    .attr("text-anchor", d => d.angle>Math.PI ? "end":"start")
+      rotate(${(d.angle*180/Math.PI - 90)})
+      translate(${outerRadius + 10})
+      ${d.angle > Math.PI ? "rotate(180)" : ""}
+    `)
+    .attr("text-anchor", d => d.angle > Math.PI ? "end" : "start")
+    .text(d => nodes[d.index])
     .style("font-size","10px")
-    .style("fill", "#d7dbe3")
-    .text(d => nodes[d.index]);
+    .style("fill","#d7dbe3");
 
-  // ribbons
-  const ribbonGen = d3.ribbon().radius(innerRadius);
-
-  g.append("g")
+  root.append("g")
     .attr("class","ribbons")
+    .attr("fill-opacity", 0.75)
     .selectAll("path")
     .data(chord)
     .join("path")
     .attr("class","ribbon")
-    .attr("d", ribbonGen)
     .attr("fill", d => color(nodes[d.source.index]))
-    .attr("fill-opacity", 0.7)
-    .attr("stroke", "rgba(255,255,255,0.1)")
+    .attr("stroke", d => d3.rgb(color(nodes[d.source.index])).darker())
+    .attr("d", ribbon)
     .style("cursor","pointer")
     .on("mouseover", (event,d)=>onRibbonHover(event,d, color))
     .on("mousemove", moveTooltip)
@@ -351,26 +376,37 @@ function renderChord(){
   drawChordLegend(color);
 }
 
-function onArcHover(event, d, chord, color){
+function onArcHover(event, d, color, baseMatrix){
   const country = nodes[d.index];
 
   // dim all ribbons then highlight those touching the arc
   d3.selectAll(".ribbon")
-    .attr("fill-opacity", r => (r.source.index===d.index || r.target.index===d.index) ? 0.9 : 0.08);
-
-  const outgoing = d3.sum(chord, r => r.source.index===d.index ? r.source.value : 0);
-  const incoming = d3.sum(chord, r => r.target.index===d.index ? r.target.value : 0);
+  .attr("fill-opacity", r =>
+    (r.source.index===d.index || r.target.index===d.index) ? 0.9 : 0.06
+  )
+  .attr("stroke-opacity", r =>
+    (r.source.index===d.index || r.target.index===d.index) ? 0.9 : 0.06
+  );
+  const i = d.index;
+  const outgoing = d3.sum(baseMatrix[i]);              // row sum
+  const incoming = d3.sum(baseMatrix, row => row[i]);  // column sum
 
   showTooltip(event, `
     <b>${country}</b><br/>
     Outgoing: ${fmtUSD(outgoing)}<br/>
-    Incoming: ${fmtUSD(incoming)}
+    Incoming: ${fmtUSD(incoming)}<br/>
+    Total: ${fmtUSD(outgoing + incoming)}
   `);
 }
 
 function onRibbonHover(event, d, color){
-  d3.selectAll(".ribbon").attr("fill-opacity", 0.08);
-  d3.select(event.currentTarget).attr("fill-opacity", 0.95);
+  d3.selectAll(".ribbon")
+    .attr("fill-opacity", 0.06)
+    .attr("stroke-opacity", 0.06);
+
+  d3.select(event.currentTarget)
+    .attr("fill-opacity", 0.95)
+    .attr("stroke-opacity", 0.95);
 
   const donor = nodes[d.source.index];
   const recip = nodes[d.target.index];
@@ -397,28 +433,49 @@ function onArcClick(country){
   updateTimeVis();
 }
 
-function highlightSelection(color=null){
-  // clear highlight styles
-  d3.selectAll(".ribbon").classed("selected", false);
-  d3.selectAll(".group path").attr("stroke-width", 1);
+function highlightSelection(){
+  d3.selectAll(".group path")
+    .attr("stroke-width", 1)
+    .attr("stroke", "rgba(255,255,255,0.2)");
 
   if (selectedPair){
+    const a = selectedPair.donor;
+    const b = selectedPair.recipient;
+
     d3.selectAll(".ribbon")
-      .classed("selected", r => nodes[r.source.index]===selectedPair.donor && nodes[r.target.index]===selectedPair.recipient)
-      .attr("fill-opacity", r => (nodes[r.source.index]===selectedPair.donor && nodes[r.target.index]===selectedPair.recipient) ? 0.95 : 0.25);
+      .attr("fill-opacity", r =>
+        (nodes[r.source.index]===a && nodes[r.target.index]===b) ? 0.95 : 0.06
+      )
+      .attr("stroke-opacity", r =>
+        (nodes[r.source.index]===a && nodes[r.target.index]===b) ? 0.95 : 0.06
+      );
+
   } else if (selectedCountry){
+    const c = selectedCountry;
+
     d3.selectAll(".group path")
-      .attr("stroke-width", g => nodes[g.index]===selectedCountry ? 3 : 1)
-      .attr("stroke", g => nodes[g.index]===selectedCountry ? "#fff" : "rgba(255,255,255,0.2)");
-    d3.selectAll(".ribbon").attr("fill-opacity", 0.6);
+      .attr("stroke-width", g => nodes[g.index]===c ? 3 : 1)
+      .attr("stroke", g => nodes[g.index]===c ? "#fff" : "rgba(255,255,255,0.2)");
+
+    d3.selectAll(".ribbon")
+      .attr("fill-opacity", r =>
+        (nodes[r.source.index]===c || nodes[r.target.index]===c) ? 0.9 : 0.06
+      )
+      .attr("stroke-opacity", r =>
+        (nodes[r.source.index]===c || nodes[r.target.index]===c) ? 0.9 : 0.06
+      );
+
   } else {
-    d3.selectAll(".ribbon").attr("fill-opacity", 0.7);
+    d3.selectAll(".ribbon")
+      .attr("fill-opacity", 0.75)
+      .attr("stroke-opacity", 1);
   }
 
-  // toggle empties
+  // toggle empty panels
   d3.select("#vis2Empty").style("display", (selectedPair||selectedCountry)?"none":"flex");
   d3.select("#vis3Empty").style("display", (selectedPair||selectedCountry)?"none":"flex");
 }
+
 
 function drawChordLegend(color){
   const legend = d3.select("#chordLegend");
@@ -696,11 +753,11 @@ function updateTimeVis(){
   const xBrush = x.copy();
 
   const brushG = g.append("g").attr("transform", `translate(0,${brushY})`);
-  brushG.append("g").call(
-    d3.axisBottom(xBrush).ticks(6).tickFormat(d3.format("d"))
-  ).call(g => g.selectAll("text").style("fill","#9aa3b2").style("font-size","9px"))
-   .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.08)"))
-   .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.15)"));
+  brushG.append("g")
+    .call(d3.axisBottom(xBrush).ticks(0).tickSize(0))
+    .call(g => g.select(".domain")
+      .style("stroke","rgba(255,255,255,0.15)")
+    );
 
   const brush = d3.brushX()
     .extent([[0, 0], [innerW, brushH]])
@@ -770,8 +827,15 @@ function moveTooltip(event){
 }
 
 function onMouseOut(){
-  if (tooltip) tooltip.style("opacity",0);
-  d3.selectAll(".ribbon").attr("fill-opacity", 0.7);
+  if (tooltip) tooltip.style("opacity", 0);
+
+  if (selectedPair || selectedCountry){
+    highlightSelection();  
+  } else {
+    d3.selectAll(".ribbon")
+      .attr("fill-opacity", 0.75)
+      .attr("stroke-opacity", 1);
+  }
 }
 </script>
 </body>
