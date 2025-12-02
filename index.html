@@ -448,6 +448,7 @@ let toSel = null;
 let indexSel = null;   
 let pairStage = 0;   
 let firstCountry = null; 
+let purposeColor = null;
 
 
 /** =========================
@@ -572,6 +573,11 @@ d3.csv(DATA_URL, d => ({
   topDonors = donors;
   topRecipients = recips;
   topPurposes = purpTotals.slice(0, TOP_N_PURPOSE).map(d => d[0]);
+
+  const palette = d3.schemeSet2.concat(d3.schemeTableau10);
+  purposeColor = d3.scaleOrdinal()
+    .domain(topPurposes.concat("other"))
+    .range(palette.slice(0, topPurposes.length + 1));
 
   allDonors = Array.from(new Set(raw.map(d => d.donor))).sort(d3.ascending);
   allRecipients = Array.from(new Set(raw.map(d => d.recipient))).sort(d3.ascending);
@@ -708,8 +714,8 @@ function updatePurposes(){
 
   const x = d3.scaleLinear().domain([0,total]).range([0, innerW]);
 
-  const color = d3.scaleOrdinal()
-    .domain(series.map(d=>d.purpose))
+  const color = purposeColor || d3.scaleOrdinal()
+    .domain(topPurposes.concat("other"))
     .range(d3.schemeSet2.concat(d3.schemeTableau10));
 
   let acc = 0;
