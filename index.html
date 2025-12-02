@@ -525,12 +525,22 @@ function onMouseOut(){
 /** =========================
  *  Data Loading & Preprocessing
  *  ========================= */
+function normalizePurpose(name) {
+  if (!name) return "unknown";
+  return name.toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[.]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 d3.csv(DATA_URL, d => ({
   year: +d.year,
   donor: d.donor,
   recipient: d.recipient,
   amount: +d.commitment_amount_usd_constant,
-  purpose: d.coalesced_purpose_name || "Unknown"
+  purpose_raw: d.coalesced_purpose_name,
+  purpose: normalizePurpose(d.coalesced_purpose_name)
 })).then(rows => {
   raw = rows.filter(d =>
     d.donor &&
