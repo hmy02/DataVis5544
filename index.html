@@ -14,146 +14,405 @@
       --muted: #a4acb9;
       --accent: #6aa9ff;
     }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
-      overflow: hidden;
-    }
-    #container {
-      display: grid;
-      grid-template-columns: 64% 36%;
-      grid-template-rows: 50% 50%;
-      gap: 12px;
-      height: 100vh;
-      padding: 12px;
+
+    * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    .panel {
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 14px;
-      position: relative;
-      overflow: hidden;
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 0 0, #1f2937 0, var(--bg) 48%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
     }
-    .panel-header {
-      padding: 10px 12px;
-      font-size: 14px;
-      letter-spacing: 0.3px;
-      color: var(--muted);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+
+    .app {
+      max-width: 1400px;
+      margin: 0 auto;
       display: flex;
+      flex-direction: column;
+      gap: 50px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
       align-items: center;
       justify-content: space-between;
     }
-    .panel-body {
-      position: absolute;
-      inset: 72px 0 0 0;
+
+    .title-block h1 {
+      font-size: 20px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #f9fafb;
     }
 
-    #vis1 { grid-row: 1 / span 2; }
-    #vis2 { grid-column: 2; grid-row: 1; }
-    #vis3 { grid-column: 2; grid-row: 2; }
-
-    .hint{
-      font-size: 12px;
+    .title-block p {
+      font-size: 13px;
       color: var(--muted);
-      padding: 0 12px 8px 12px;
-      padding-right: 150px;
+      margin-top: 4px;
     }
 
-    .tooltip {
-      position: absolute;
-      pointer-events: none;
-      background: rgba(18,24,38,0.95);
-      border: 1px solid rgba(255,255,255,0.1);
-      padding: 8px 10px;
-      font-size: 12px;
-      border-radius: 8px;
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 6px 10px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      background: radial-gradient(circle at top left, #1f2937 0, #020617 60%);
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.8), 0 18px 40px rgba(15,23,42,0.9);
+    }
+
+    .pill-label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 10px;
+      color: #9ca3af;
+    }
+
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #4ade80;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.18);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      grid-template-rows: minmax(0, 380px) minmax(0, 260px);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    #vis1 {
+      grid-row: 1 / span 2;
+      grid-column: 1;
+    }
+
+    #vis2 {
+      grid-row: 1;
+      grid-column: 2;
+    }
+
+    #vis3 {
+      grid-row: 2;
+      grid-column: 2;
+    }
+
+    .panel {
+      background: radial-gradient(circle at top, #111827 0, #020617 55%);
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.15);
+      box-shadow:
+        0 18px 60px rgba(15,23,42,0.85),
+        0 0 0 1px rgba(15,23,42,0.9),
+        0 0 40px rgba(37,99,235,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .panel-header {
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid rgba(148,163,184,0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      background: linear-gradient(to right, rgba(15,23,42,0.9), rgba(15,23,42,0.2));
+      backdrop-filter: blur(10px);
+      z-index: 2;
+    }
+
+    .panel-header > div:first-child {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #9ca3af;
+    }
+
+    .panel-header > div:last-child {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .panel-body {
+      flex: 1;
+      padding: 10px 10px 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 4px 10px 8px;
+    }
+
+    .toolbar label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    select, button {
+      font-family: inherit;
+      font-size: 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      padding: 4px 8px;
+      background: rgba(15,23,42,0.9);
       color: var(--text);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-      line-height: 1.4;
-      z-index: 1000;
-      transform: translate(-50%, -120%);
-      white-space: nowrap;
+    }
+
+    button {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    button:hover {
+      border-color: rgba(96,165,250,0.9);
+      box-shadow: 0 0 0 1px rgba(37,99,235,0.5);
+    }
+
+    button.secondary {
+      border-style: dashed;
+      border-color: rgba(148,163,184,0.6);
+      color: #cbd5f5;
+      background: radial-gradient(circle at top, rgba(37,99,235,0.25), rgba(15,23,42,0.9) 40%);
+    }
+
+    .toggle-group {
+      display: inline-flex;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      overflow: hidden;
+    }
+
+    .toggle-group button {
+      border-radius: 0;
+      border: none;
+      background: transparent;
+      padding: 4px 10px;
+    }
+
+    .toggle-group button.active {
+      background: radial-gradient(circle at top, rgba(59,130,246,0.75), rgba(37,99,235,0.2));
+      color: #eff6ff;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 0 10px 4px;
     }
 
     .legend {
-      position: absolute;
-      right: 8px;
-      top: 84px;
       font-size: 11px;
       color: var(--muted);
+      padding: 4px 10px 8px;
       display: flex;
-      flex-direction: column;
-      gap: 4px;
-      background: rgba(0,0,0,0.2);
-      padding: 6px 8px;
-      border-radius: 8px;
-      max-height: calc(100% - 100px);
-      overflow: auto;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      border-top: 1px dashed rgba(148,163,184,0.3);
+      background: radial-gradient(circle at top left, rgba(30,64,175,0.25), transparent 50%);
     }
 
-    .button-row {
-      display: flex; gap: 6px; align-items: center;
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
     }
-    .btn {
+
+    .legend span::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.9);
+    }
+
+    .legend-gradient-block {
+      width: 100%;
+      margin-top: 4px;
+      margin-bottom: 6px;
+    }
+
+    .legend-gradient-bar {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #1e3a8a, #d1d5db, #f59e0b);
+    }
+
+    .legend-gradient-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+.empty {
       font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 7px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: var(--panel-2);
-      color: var(--text);
-      cursor: pointer;
-      user-select: none;
-    }
-    .btn.active { border-color: var(--accent); color: var(--accent); }
-
-    .empty {
-      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-      color: var(--muted); font-size: 13px;
+      color: var(--muted);
+      padding: 12px;
+      text-align: center;
+      border-top: 1px dashed rgba(148,163,184,0.3);
     }
 
-    svg { width: 100%; height: 100%; }
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: radial-gradient(circle at top left, #1e293b, #020617 40%);
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,0.6);
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #e5e7eb;
+      box-shadow:
+        0 20px 50px rgba(15,23,42,0.95),
+        0 0 0 1px rgba(15,23,42,0.9),
+        0 0 24px rgba(59,130,246,0.3);
+      z-index: 50;
+      max-width: 260px;
+      backdrop-filter: blur(14px);
+    }
+
+    .tooltip b {
+      color: #fef9c3;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      font-size: 10px;
+      color: #e5e7eb;
+      background: linear-gradient(135deg, rgba(59,130,246,0.5), rgba(15,23,42,0.95));
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+      }
+      #vis1, #vis2, #vis3 {
+        grid-column: 1;
+        grid-row: auto;
+      }
+      #vis1 {
+        min-height: 320px;
+      }
+      #vis2, #vis3 {
+        min-height: 260px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div id="container">
+<div class="app">
+  <header>
+    <div class="title-block">
+      <h1>Global Aid Network Explorer</h1>
+      <p>
+        Explore bilateral aid flows across donors, recipients, and purposes.
+        Brush on the time axis, click a country or a flow, and compare patterns across coordinated views.
+      </p>
+    </div>
+  </header>
+
+  <main>
     <div id="vis1" class="panel">
       <div class="panel-header">
-        <div>Vis 1 — Overview (Directed Chord)</div>
-        <div class="button-row">
-          <div id="resetBtn" class="btn">Reset selection</div>
-        </div>
+        <div>Global Aid Flow Network</div>
       </div>
-      <div class="hint">Hover ribbons/arcs for details. Click a ribbon to see purposes (Vis2) and yearly trend (Vis3). Click a country arc to see its time-varying partners (Vis3).</div>
-      <div class="panel-body"><svg id="chordSvg"></svg></div>
+      <div class="toolbar">
+        <label>Country 1:</label>
+        <select id="fromSelect">
+          <option value="__all__">All countries</option>
+        </select>
+
+        <label style="margin-left:8px;">Country 2:</label>
+        <select id="toSelect">
+          <option value="__all__">All countries</option>
+        </select>
+
+        <div style="flex:1"></div>  
+
+        <label>Time:</label>
+        <div class="toggle-group">
+          <button id="timeAmountBtn" class="active" data-mode="amount">Total amount</button>
+          <button id="timeShareBtn" data-mode="share">Share of total</button>
+        </div>
+
+        <button id="resetSelectionBtn" class="secondary">
+          Reset selection
+        </button>
+      </div>
+      <div class="panel-body">
+        <svg id="chordSvg"></svg>
+      </div>
       <div id="chordLegend" class="legend"></div>
     </div>
 
     <div id="vis2" class="panel">
       <div class="panel-header">
-        <div>Vis 2 — Purposes (Top 5)</div>
+        <div>Main Development Purposes</div>
       </div>
-      <div class="hint" id="vis2Hint">Select a ribbon or country.</div>
+      <div class="hint" id="vis2Hint">Select a flow or a country in the network view to see purpose composition.</div>
       <div class="panel-body"><svg id="purposeSvg"></svg></div>
-      <div id="vis2Empty" class="empty">No selection yet</div>
+      <div id="vis2Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
     </div>
 
     <div id="vis3" class="panel">
       <div class="panel-header">
-        <div>Vis 3 — Time Variation</div>
-        <div class="button-row">
-          <div id="modeAmt" class="btn active">Amount</div>
-          <div id="modeShare" class="btn">Share</div>
-        </div>
+        <div>Time Evolution of Aid Flows</div>
       </div>
-      <div class="hint" id="vis3Hint">Select a ribbon (pair) or country.</div>
+      <div class="hint">Brush on the area chart to constrain the time window for all views.</div>
       <div class="panel-body"><svg id="timeSvg"></svg></div>
-      <div id="vis3Empty" class="empty">No selection yet</div>
+      <div id="vis3Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
     </div>
-  </div>
+  </main>
+</div>
+
+<div id="tooltip" class="tooltip" style="opacity:0;"></div>
 
 <script>
 /** =========================
@@ -171,326 +430,185 @@ let topDonors = [];
 let topRecipients = [];
 let topPurposes = [];
 let nodes = [];
-let nodeIndex = new Map();
+let allDonors = [];
+let allRecipients = [];
+
 
 let selectedPair = null;     // {donor, recipient}
 let selectedCountry = null;  // string
 let timeWindow = null;       // [y0,y1] or null
 let timeMode = "amount";     // "amount" or "share"
+let arcMatrix = null;
+let arcOutgoing = [];
+let arcIncoming = [];
+let nodeColors = [];
+let netVals = [];
+let fromSel = null;
+let toSel = null;
+let indexSel = null;   
+let pairStage = 0;   
+let firstCountry = null; 
+
 
 /** =========================
  *  Utilities
  *  ========================= */
-const fmtUSD = d3.format("$.3s");
-const fmtPct = d3.format(".1%");
+function fmtUSD(x){
+  if (!x) return "$0";
+  const v = Math.abs(x);
+  let suffix = "";
+  let val = v;
 
-function normalizePurpose(name) {
-  if (!name) return "unknown";
-  return name.toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[.]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  if (v >= 1e9){
+    val = v / 1e9;
+    suffix = "B";
+  } else if (v >= 1e6){
+    val = v / 1e6;
+    suffix = "M";
+  } else if (v >= 1e3){
+    val = v / 1e3;
+    suffix = "K";
+  }
+  let s = val.toFixed(val >= 100 ? 0 : val >= 10 ? 1 : 2);
+  if (x < 0) s = "-" + s;
+  return `$${s}${suffix}`;
 }
 
-function sumBy(group, value) {
-  return d3.rollup(group, v => d3.sum(v, d => d[value]));
+function fmtPct(x){
+  if (!isFinite(x)) return "0%";
+  return (x*100).toFixed(1) + "%";
+}
+
+function unique(arr){
+  return Array.from(new Set(arr));
 }
 
 /** =========================
- *  Load + Prepare
+ *  Tooltip
+ *  ========================= */
+const tooltip = d3.select("#tooltip");
+
+function showTooltip(event, html){
+  tooltip.html(html)
+    .style("opacity", 1);
+
+  moveTooltip(event);
+}
+
+function moveTooltip(event){
+  const [mx, my] = d3.pointer(event);
+  const pad = 14;
+  tooltip
+    .style("left", (event.clientX + pad) + "px")
+    .style("top", (event.clientY + pad) + "px");
+}
+
+function onMouseOut(){
+  if (tooltip) tooltip.style("opacity", 0);
+
+  if (selectedPair || selectedCountry){
+    // Return to the current selection highlight (if any)
+    highlightSelection();  
+  } else {
+    // No selection: reset both nodes and ribbons to default opacity
+    d3.selectAll(".group path")
+      .attr("fill-opacity", 1)
+      .attr("stroke-opacity", 1)
+      .attr("stroke-width", 1);
+
+    d3.selectAll(".ribbon")
+      .attr("fill-opacity", 0.75)
+      .attr("stroke-opacity", 1);
+  }
+}
+
+/** =========================
+ *  Data Loading & Preprocessing
  *  ========================= */
 d3.csv(DATA_URL, d => ({
   year: +d.year,
   donor: d.donor,
   recipient: d.recipient,
   amount: +d.commitment_amount_usd_constant,
-  purpose_raw: d.coalesced_purpose_name,
-  purpose: normalizePurpose(d.coalesced_purpose_name)
+  purpose: d.coalesced_purpose_name || "Unknown"
 })).then(rows => {
-  raw = rows.filter(d => d.amount > 0 && !Number.isNaN(d.amount));
-  prepareTopLists();
-  buildNodes();
-  filterToTopCountries();
-  computeTopPurposes(); // within filtered top countries
+  raw = rows.filter(d =>
+    d.donor &&
+    d.recipient &&
+    Number.isFinite(d.amount) &&
+    d.amount > 0 &&
+    d.year
+  );
+
+  dataFiltered = raw;
+
+  const donors = Array.from(
+    d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.donor)
+  )
+    .sort((a, b) => d3.descending(a[1], b[1]))
+    .slice(0, TOP_N_DONORS)
+    .map(d => d[0]);
+
+  const recips = Array.from(
+    d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.recipient)
+  )
+    .sort((a, b) => d3.descending(a[1], b[1]))
+    .slice(0, TOP_N_RECIP)
+    .map(d => d[0]);
+
+  const purpTotals = Array.from(
+    d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.purpose)
+  ).sort((a, b) => d3.descending(a[1], b[1]));
+  topDonors = donors;
+  topRecipients = recips;
+  topPurposes = purpTotals.slice(0, TOP_N_PURPOSE).map(d => d[0]);
+
+  allDonors = Array.from(new Set(raw.map(d => d.donor))).sort(d3.ascending);
+  allRecipients = Array.from(new Set(raw.map(d => d.recipient))).sort(d3.ascending);
+
+  nodes = Array.from(new Set([...allDonors, ...allRecipients])).sort(d3.ascending);
+
   renderChord();
+  updatePurposes();
+  updateTimeVis();
   attachGlobalUI();
+}).catch(err => {
+  console.error("Error loading CSV:", err);
 });
 
-function prepareTopLists(){
-  const donorTotals = d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.donor);
-  const recipTotals = d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.recipient);
-
-  topDonors = Array.from(donorTotals, ([k,v]) => ({k,v}))
-    .sort((a,b)=>d3.descending(a.v,b.v))
-    .slice(0, TOP_N_DONORS)
-    .map(d=>d.k);
-
-  topRecipients = Array.from(recipTotals, ([k,v]) => ({k,v}))
-    .sort((a,b)=>d3.descending(a.v,b.v))
-    .slice(0, TOP_N_RECIP)
-    .map(d=>d.k);
-}
-
-function buildNodes(){
-  const set = new Set([...topDonors, ...topRecipients]);
-  nodes = Array.from(set);
-  nodes.sort(d3.ascending);
-  nodeIndex = new Map(nodes.map((n,i)=>[n,i]));
-}
-
-function filterToTopCountries(){
-  dataFiltered = raw.filter(d => topDonors.includes(d.donor) && topRecipients.includes(d.recipient));
-}
-
-function computeTopPurposes(){
-  const purposeTotals = d3.rollup(
-    dataFiltered,
-    v => d3.sum(v, d => d.amount),
-    d => d.purpose
-  );
-  topPurposes = Array.from(purposeTotals, ([k,v])=>({k,v}))
-    .sort((a,b)=>d3.descending(a.v,b.v))
-    .slice(0, TOP_N_PURPOSE)
-    .map(d=>d.k);
-}
-
 /** =========================
- *  VIS 1: CHORD
+ *  Matrix builder for chord
  *  ========================= */
-function buildMatrix(windowYears=null){
-  let df = dataFiltered;
-  if (windowYears){
-    const [y0,y1] = windowYears;
-    df = df.filter(d => d.year>=y0 && d.year<=y1);
+function buildMatrix(tWindow){
+  let df = raw;
+
+  if (tWindow){
+    const [y0,y1] = tWindow;
+    df = raw.filter(d => d.year >= y0 && d.year <= y1);
   }
 
-  const mat = Array.from({length:nodes.length}, ()=>Array(nodes.length).fill(0));
-  for (const d of df){
-    const i = nodeIndex.get(d.donor);
-    const j = nodeIndex.get(d.recipient);
-    if (i==null || j==null) continue;
-    mat[i][j] += d.amount;
-  }
-  return mat;
-}
-
-function buildMatricesForChord(windowYears=null){
-  const base = buildMatrix(windowYears); // donor->recipient only
-  const n = base.length;
-
-  // incoming = column sums
-  const incoming = Array(n).fill(0);
-  for (let i = 0; i < n; i++){
-    for (let j = 0; j < n; j++){
-      incoming[j] += base[i][j];
-    }
-  }
-
-  // adjusted: add incoming to diagonal so arc width = outgoing + incoming
-  const adjusted = base.map(row => row.slice());
-  for (let i = 0; i < n; i++){
-    adjusted[i][i] += incoming[i];
-  }
-
-  return { base, adjusted, incoming };
-}
-
-
-function renderChord(){
-  const svg = d3.select("#chordSvg");
-  svg.selectAll("*").remove();
-
-  const width = svg.node().clientWidth;
-  const height = svg.node().clientHeight;
-  const innerRadius = Math.min(width, height) * 0.35;
-  const outerRadius = innerRadius * 1.1;
-
-  svg.attr("viewBox", [-width/2, -height/2, width, height]);
-  const root = svg.append("g");
-
-  const matrix = buildMatrix(timeWindow); // ✅ 只用 base
-
-  const chord = d3.chordDirected()
-    .padAngle(0.03)
-    .sortSubgroups(d3.descending)
-    (matrix);
-
-  const color = d3.scaleOrdinal()
-    .domain(nodes)
-    .range(d3.schemeTableau10.concat(d3.schemeSet3).slice(0, nodes.length));
-
-  const arc = d3.arc()
-    .innerRadius(innerRadius)
-    .outerRadius(outerRadius);
-
-  const ribbon = d3.ribbonArrow()
-    .radius(innerRadius - 1)
-    .padAngle(1 / innerRadius);
-
-  const group = root.append("g")
-    .selectAll("g")
-    .data(chord.groups)
-    .join("g")
-    .attr("class","group");
-
-  group.append("path")
-    .attr("fill", d => color(nodes[d.index]))
-    .attr("stroke", d => d3.rgb(color(nodes[d.index])).darker())
-    .attr("d", arc)
-    .style("cursor","pointer")
-    .on("mouseover", (event,d)=>onArcHover(event,d, chord, color)) // 用你原来的 onArcHover
-    .on("mousemove", moveTooltip)
-    .on("mouseout", onMouseOut)
-    .on("click", (event,d)=>onArcClick(nodes[d.index]));
-
-  group.append("text")
-    .each(d => (d.angle = (d.startAngle + d.endAngle)/2))
-    .attr("dy","0.35em")
-    .attr("transform", d => `
-      rotate(${(d.angle*180/Math.PI - 90)})
-      translate(${outerRadius + 10})
-      ${d.angle > Math.PI ? "rotate(180)" : ""}
-    `)
-    .attr("text-anchor", d => d.angle > Math.PI ? "end" : "start")
-    .text(d => nodes[d.index])
-    .style("font-size","10px")
-    .style("fill","#d7dbe3");
-
-  root.append("g")
-    .attr("class","ribbons")
-    .attr("fill-opacity", 0.75)
-    .selectAll("path")
-    .data(chord)
-    .join("path")
-    .attr("class","ribbon")
-    .attr("fill", d => color(nodes[d.source.index]))
-    .attr("stroke", d => d3.rgb(color(nodes[d.source.index])).darker())
-    .attr("d", ribbon)
-    .style("cursor","pointer")
-    .on("mouseover", (event,d)=>onRibbonHover(event,d, color))
-    .on("mousemove", moveTooltip)
-    .on("mouseout", onMouseOut)
-    .on("click", (event,d)=>onRibbonClick(d, color));
-
-  drawChordLegend(color);
-}
-
-function onArcHover(event, d, color, baseMatrix){
-  const country = nodes[d.index];
-
-  // dim all ribbons then highlight those touching the arc
-  d3.selectAll(".ribbon")
-  .attr("fill-opacity", r =>
-    (r.source.index===d.index || r.target.index===d.index) ? 0.9 : 0.06
-  )
-  .attr("stroke-opacity", r =>
-    (r.source.index===d.index || r.target.index===d.index) ? 0.9 : 0.06
-  );
-  const i = d.index;
-  const outgoing = d3.sum(baseMatrix[i]);              // row sum
-  const incoming = d3.sum(baseMatrix, row => row[i]);  // column sum
-
-  showTooltip(event, `
-    <b>${country}</b><br/>
-    Outgoing: ${fmtUSD(outgoing)}<br/>
-    Incoming: ${fmtUSD(incoming)}<br/>
-    Total: ${fmtUSD(outgoing + incoming)}
-  `);
-}
-
-function onRibbonHover(event, d, color){
-  d3.selectAll(".ribbon")
-    .attr("fill-opacity", 0.06)
-    .attr("stroke-opacity", 0.06);
-
-  d3.select(event.currentTarget)
-    .attr("fill-opacity", 0.95)
-    .attr("stroke-opacity", 0.95);
-
-  const donor = nodes[d.source.index];
-  const recip = nodes[d.target.index];
-  const val = d.source.value;
-  showTooltip(event, `
-    <b>${donor} → ${recip}</b><br/>
-    Total: ${fmtUSD(val)}
-  `);
-}
-
-function onRibbonClick(d, color){
-  selectedPair = { donor: nodes[d.source.index], recipient: nodes[d.target.index] };
-  selectedCountry = null;
-  highlightSelection(color);
-  updatePurposes();
-  updateTimeVis();
-}
-
-function onArcClick(country){
-  selectedCountry = country;
-  selectedPair = null;
-  highlightSelection();
-  updatePurposes();
-  updateTimeVis();
-}
-
-function highlightSelection(){
-  d3.selectAll(".group path")
-    .attr("stroke-width", 1)
-    .attr("stroke", "rgba(255,255,255,0.2)");
-
-  if (selectedPair){
-    const a = selectedPair.donor;
-    const b = selectedPair.recipient;
-
-    d3.selectAll(".ribbon")
-      .attr("fill-opacity", r =>
-        (nodes[r.source.index]===a && nodes[r.target.index]===b) ? 0.95 : 0.06
-      )
-      .attr("stroke-opacity", r =>
-        (nodes[r.source.index]===a && nodes[r.target.index]===b) ? 0.95 : 0.06
-      );
-
-  } else if (selectedCountry){
-    const c = selectedCountry;
-
-    d3.selectAll(".group path")
-      .attr("stroke-width", g => nodes[g.index]===c ? 3 : 1)
-      .attr("stroke", g => nodes[g.index]===c ? "#fff" : "rgba(255,255,255,0.2)");
-
-    d3.selectAll(".ribbon")
-      .attr("fill-opacity", r =>
-        (nodes[r.source.index]===c || nodes[r.target.index]===c) ? 0.9 : 0.06
-      )
-      .attr("stroke-opacity", r =>
-        (nodes[r.source.index]===c || nodes[r.target.index]===c) ? 0.9 : 0.06
-      );
-
-  } else {
-    d3.selectAll(".ribbon")
-      .attr("fill-opacity", 0.75)
-      .attr("stroke-opacity", 1);
-  }
-
-  // toggle empty panels
-  d3.select("#vis2Empty").style("display", (selectedPair||selectedCountry)?"none":"flex");
-  d3.select("#vis3Empty").style("display", (selectedPair||selectedCountry)?"none":"flex");
-}
-
-
-function drawChordLegend(color){
-  const legend = d3.select("#chordLegend");
-  legend.selectAll("*").remove();
-  const sample = nodes.slice(0, Math.min(nodes.length, 12));
-  sample.forEach(n=>{
-    const row = legend.append("div").style("display","flex").style("gap","6px").style("align-items","center");
-    row.append("div").style("width","10px").style("height","10px").style("background", color(n)).style("border-radius","2px");
-    row.append("div").text(n);
+  const map = new Map();
+  df.forEach(d => {
+    const key = `${d.donor}||${d.recipient}`;
+    const prev = map.get(key) || 0;
+    map.set(key, prev + d.amount);
   });
-  if (nodes.length>12) legend.append("div").text("…");
+
+  const n = nodes.length;
+  const base = Array.from({length:n}, () => Array(n).fill(0));
+
+  nodes.forEach((donor,i) => {
+    nodes.forEach((recip,j) => {
+      const key = `${donor}||${recip}`;
+      base[i][j] = map.get(key) || 0;
+    });
+  });
+
+  return base;
 }
 
 /** =========================
- *  VIS 2: PURPOSES (stacked bar)
+ *  VIS 2: PURPOSE STACKED BAR
  *  ========================= */
 function updatePurposes(){
   const svg = d3.select("#purposeSvg");
@@ -507,13 +625,18 @@ function updatePurposes(){
 
   let title = "";
   let series = [];
+  let base = dataFiltered;
+
+  if (timeWindow){
+    const [y0, y1] = timeWindow;
+    base = base.filter(d => d.year >= y0 && d.year <= y1);
+  }
 
   if (selectedPair){
     title = `${selectedPair.donor} → ${selectedPair.recipient}`;
-    const df = dataFiltered.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
+    const df = base.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
     const totals = d3.rollup(df, v => d3.sum(v, d => d.amount), d => d.purpose);
 
-    // keep only topPurposes + other
     let other = 0;
     series = topPurposes.map(p => ({purpose:p, amount: totals.get(p)||0}));
     for (const [p,v] of totals){
@@ -521,9 +644,8 @@ function updatePurposes(){
     }
     if (other>0) series.push({purpose:"other", amount: other});
   } else if (selectedCountry){
-    // For a country selection, show outgoing purposes if any, else incoming purposes
-    const out = dataFiltered.filter(d => d.donor===selectedCountry);
-    const inc = dataFiltered.filter(d => d.recipient===selectedCountry);
+    const out = base.filter(d => d.donor===selectedCountry);
+    const inc = base.filter(d => d.recipient===selectedCountry);
     const outSum = d3.sum(out,d=>d.amount);
     const incSum = d3.sum(inc,d=>d.amount);
     const df = outSum>=incSum ? out : inc;
@@ -537,12 +659,43 @@ function updatePurposes(){
     }
     if (other>0) series.push({purpose:"other", amount: other});
   } else {
-    return;
+    title = "Global main development purposes";
+    const totals = d3.rollup(
+      base,
+      v => d3.sum(v, d => d.amount),
+      d => d.purpose
+    );
+
+    let other = 0;
+    series = topPurposes.map(p => ({
+      purpose: p,
+      amount: totals.get(p) || 0
+    }));
+
+    for (const [p, v] of totals) {
+      if (!topPurposes.includes(p)) other += v;
+    }
+    if (other > 0) {
+      series.push({ purpose: "other", amount: other });
+    }
   }
+
+  // sort purposes by amount (descending) for the stacked bar
+  series.sort((a, b) => d3.descending(a.amount, b.amount));
 
   d3.select("#vis2Hint").text(title);
 
-  const total = d3.sum(series, d=>d.amount);
+  const total = d3.sum(series, d => d.amount);
+  if (!total || total<=0){
+    g.append("text")
+      .attr("x", innerW/2)
+      .attr("y", innerH/2)
+      .attr("text-anchor","middle")
+      .style("fill", "#9ca3af")
+      .text("No aid recorded for this selection.");
+    return;
+  }
+
   const x = d3.scaleLinear().domain([0,total]).range([0, innerW]);
 
   const color = d3.scaleOrdinal()
@@ -564,7 +717,6 @@ function updatePurposes(){
     .on("mousemove", moveTooltip)
     .on("mouseout", onMouseOut);
 
-  // axis
   g.append("g")
     .attr("transform", `translate(0, ${innerH/2 + 26})`)
     .call(d3.axisBottom(x).ticks(5).tickFormat(fmtUSD))
@@ -572,7 +724,6 @@ function updatePurposes(){
     .call(g => g.selectAll("line").style("stroke", "rgba(255,255,255,0.12)"))
     .call(g => g.selectAll("path").style("stroke", "rgba(255,255,255,0.25)"));
 
-  // legend
   const leg = g.append("g").attr("transform", `translate(0,0)`);
   const legItems = series.map(d=>d.purpose);
   legItems.forEach((p,i)=>{
@@ -591,250 +742,861 @@ function updateTimeVis(){
 
   const w = svg.node().clientWidth;
   const h = svg.node().clientHeight;
-  const pad = {top: 18, right: 12, bottom: 44, left: 44};
+
+  const donorMaxColor = d3.interpolatePuBu(1);
+  const recipMaxColor = d3.interpolateReds(1);
+
+  const pad = {top: 18, right: 18, bottom: 40, left: 42};
   const innerW = w - pad.left - pad.right;
   const innerH = h - pad.top - pad.bottom;
 
   const g = svg.append("g").attr("transform", `translate(${pad.left},${pad.top})`);
 
-  if (!selectedPair && !selectedCountry) return;
-
-  const years = d3.extent(raw, d=>d.year);
-  const yearRange = d3.range(years[0], years[1]+1);
-
-  if (selectedPair){
-    d3.select("#vis3Hint").text(`${selectedPair.donor} → ${selectedPair.recipient}, yearly total`);
-    const df = dataFiltered.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
-    const byYear = d3.rollup(df, v => d3.sum(v, d=>d.amount), d=>d.year);
-    const series = yearRange.map(y=>({year:y, value: byYear.get(y)||0}));
-
-    const x = d3.scaleLinear().domain(years).range([0, innerW]);
-    const y = d3.scaleLinear().domain([0, d3.max(series, d=>d.value)*1.05]).nice().range([innerH, 0]);
-
-    g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(fmtUSD))
-      .call(g => g.selectAll("text").style("fill","#cbd2dc"))
-      .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
-      .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
-
-    g.append("g").attr("transform", `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
-      .call(g => g.selectAll("text").style("fill","#cbd2dc"))
-      .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
-      .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
-
-    const area = d3.area()
-      .x(d=>x(d.year))
-      .y0(innerH)
-      .y1(d=>y(d.value));
-
-    const line = d3.line()
-      .x(d=>x(d.year))
-      .y(d=>y(d.value));
-
-    g.append("path").datum(series).attr("d", area).attr("fill","rgba(106,169,255,0.25)");
-    g.append("path").datum(series).attr("d", line).attr("fill","none").attr("stroke","#6aa9ff").attr("stroke-width",2);
-
-    // hover points
-    const bisect = d3.bisector(d=>d.year).left;
-    svg.on("mousemove", (event)=>{
-      const [mx,my] = d3.pointer(event, g.node());
-      const yr = Math.round(x.invert(mx));
-      const i = bisect(series, yr);
-      const d = series[Math.max(0, Math.min(series.length-1, i))];
-      showTooltip(event, `<b>${d.year}</b><br/>${fmtUSD(d.value)}`);
-    }).on("mouseout", onMouseOut);
-
-    // no brush in pair mode
+  if (!raw.length){
+    g.append("text")
+      .attr("x", innerW/2)
+      .attr("y", innerH/2)
+      .attr("text-anchor","middle")
+      .style("fill","#9ca3af")
+      .text("Loading...");
     return;
   }
 
-  // country mode -> stacked area of partners
-  const out = dataFiltered.filter(d => d.donor===selectedCountry);
-  const inc = dataFiltered.filter(d => d.recipient===selectedCountry);
-  const outSum = d3.sum(out,d=>d.amount);
-  const incSum = d3.sum(inc,d=>d.amount);
-  const isOutgoing = outSum>=incSum;
-  const df = isOutgoing ? out : inc;
-  const partners = isOutgoing ? topRecipients : topDonors;
-  const partnerField = isOutgoing ? "recipient" : "donor";
-  const title = isOutgoing
-    ? `${selectedCountry} → recipients over time`
-    : `donors → ${selectedCountry} over time`;
-  d3.select("#vis3Hint").text(title);
-
-  // Build wide data: year x partner amounts
-  const wide = yearRange.map(y=>{
-    const row = {year:y};
-    partners.forEach(p=>row[p]=0);
-    return row;
-  });
-
-  const byYearPartner = d3.rollups(
-    df,
-    v => d3.sum(v, d=>d.amount),
-    d=>d.year, d=>d[partnerField]
-  );
-  const mapYP = new Map(byYearPartner.map(([y, arr]) => [y, new Map(arr)]));
-
-  for (const row of wide){
-    const mp = mapYP.get(row.year);
-    if (mp){
-      for (const p of partners){
-        row[p] = mp.get(p) || 0;
-      }
-    }
+  const yearExtent = d3.extent(raw, d => d.year);
+  if (!yearExtent || yearExtent[0] == null){
+    g.append("text")
+      .attr("x", innerW/2)
+      .attr("y", innerH/2)
+      .attr("text-anchor","middle")
+      .style("fill","#9ca3af")
+      .text("No time information.");
+    return;
   }
 
-  // Convert to shares if needed
-  let stackInput = wide;
-  if (timeMode==="share"){
-    stackInput = wide.map(r=>{
-      const total = d3.sum(partners, p=>r[p]);
-      const nr = {year:r.year};
-      partners.forEach(p=>nr[p]= total>0 ? r[p]/total : 0);
-      return nr;
+  const yearList = d3.range(yearExtent[0], yearExtent[1] + 1);
+  const globalByYear = d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.year);
+
+  let title = "";
+  let series = [];
+
+  if (selectedPair){
+    const { donor, recipient } = selectedPair;
+    const dfPair = raw.filter(d => d.donor === donor && d.recipient === recipient);
+    const amountByYear = d3.rollup(dfPair, v => d3.sum(v, d => d.amount), d => d.year);
+
+    series = yearList.map(year => {
+      const amount = amountByYear.get(year) || 0;
+      const global = globalByYear.get(year) || 0;
+      return {
+        year,
+        amount,
+        share: global > 0 ? amount / global : 0,
+        incoming: 0,
+        outgoing: amount
+      };
     });
+    title = `${donor} → ${recipient}`;
+  } else if (selectedCountry){
+    const c = selectedCountry;
+
+    const out = raw.filter(d => d.donor === c);
+    const inc = raw.filter(d => d.recipient === c);
+
+    const outByYear = d3.rollup(out, v => d3.sum(v, d => d.amount), d => d.year);
+    const incByYear = d3.rollup(inc, v => d3.sum(v, d => d.amount), d => d.year);
+
+    series = yearList.map(year => {
+      const outgoing = outByYear.get(year) || 0;
+      const incoming = incByYear.get(year) || 0;
+      const amount   = incoming + outgoing;
+      const global   = globalByYear.get(year) || 0;
+      return {
+        year,
+        amount,
+        share: global > 0 ? amount / global : 0,
+        incoming,
+        outgoing
+      };
+    });
+    title = `${c}`;
+  } else {
+    series = yearList.map(year => {
+      const amount = globalByYear.get(year) || 0;
+      return {
+        year,
+        amount,
+        share: globalByYear.get(year) ? 1 : 0,
+        incoming: amount,
+        outgoing: 0
+      };
+    });
+    title = "Global aid volume";
   }
 
-  const stack = d3.stack().keys(partners)(stackInput);
-  const maxY = timeMode==="share" ? 1 : d3.max(stack, s => d3.max(s, d=>d[1]));
-  const x = d3.scaleLinear().domain(years).range([0, innerW]);
-  const y = d3.scaleLinear().domain([0, maxY]).nice().range([innerH, 0]);
+  const x = d3.scaleLinear()
+    .domain(d3.extent(series, d => d.year))
+    .range([0, innerW]);
 
-  const color = d3.scaleOrdinal()
-    .domain(partners)
-    .range(d3.schemeTableau10.concat(d3.schemeSet3).slice(0, partners.length));
+  if (selectedCountry && timeMode === "amount") {
+    const maxOut = d3.max(series, d => d.outgoing) || 0;
+    const maxIn  = d3.max(series, d => d.incoming) || 0;
+    const maxAbs = Math.max(maxOut, maxIn);
+    if (maxAbs <= 0){
+      g.append("text")
+        .attr("x", innerW/2)
+        .attr("y", innerH/2)
+        .attr("text-anchor","middle")
+        .style("fill","#9ca3af")
+        .text("No aid recorded for this selection.");
+      return;
+    }
+
+    const y = d3.scaleLinear()
+      .domain([-maxAbs, maxAbs])
+      .range([innerH, 0]);
+
+    const defs = svg.append("defs");
+
+    // Outgoing
+    const gradOut = defs.append("linearGradient")
+      .attr("id", "timeAreaOutgoing")
+      .attr("x1","0%").attr("x2","0%")
+      .attr("y1","0%").attr("y2","100%");
+    gradOut.append("stop").attr("offset","0%").attr("stop-color",donorMaxColor).attr("stop-opacity",0.9);
+    gradOut.append("stop").attr("offset","100%").attr("stop-color","#020617").attr("stop-opacity",0);
+
+    // Incoming
+    const gradIn = defs.append("linearGradient")
+      .attr("id", "timeAreaIncoming")
+      .attr("x1","0%").attr("x2","0%")
+      .attr("y1","0%").attr("y2","100%");
+    gradIn.append("stop").attr("offset","0%").attr("stop-color","#020617").attr("stop-opacity",0);
+    gradIn.append("stop").attr("offset","100%").attr("stop-color",recipMaxColor).attr("stop-opacity",0.9);
+
+    const areaOut = d3.area()
+      .x(d => x(d.year))
+      .y0(() => y(0))
+      .y1(d => y(-d.outgoing))
+      .curve(d3.curveMonotoneX);
+
+    const areaIn = d3.area()
+      .x(d => x(d.year))
+      .y0(() => y(0))
+      .y1(d => y(d.incoming))
+      .curve(d3.curveMonotoneX);
+
+    g.append("path")
+      .datum(series)
+      .attr("fill", "url(#timeAreaIncoming)")
+      .attr("stroke", recipMaxColor)
+      .attr("stroke-width", 1.2)
+      .attr("d", areaIn);
+
+    g.append("path")
+      .datum(series)
+      .attr("fill", "url(#timeAreaOutgoing)")
+      .attr("stroke", donorMaxColor)
+      .attr("stroke-width", 1.4)
+      .attr("d", areaOut);
+
+    g.append("g")
+      .attr("transform", `translate(0,${y(0)})`)
+      .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
+      .call(g => g.selectAll("text").style("fill", "#cbd2dc"))
+      .call(g => g.selectAll("line").style("stroke", "rgba(148,163,184,0.4)"))
+      .call(g => g.selectAll("path").style("stroke", "rgba(148,163,184,0.7)"));
+
+    g.append("g")
+      .call(
+        d3.axisLeft(y)
+          .ticks(4)
+          .tickFormat(d => d === 0 ? "0" : fmtUSD(d))
+      )
+      .call(g => g.selectAll("text").style("fill", "#cbd2dc"))
+      .call(g => g.selectAll("line").style("stroke", "rgba(148,163,184,0.25)"))
+      .call(g => g.selectAll("path").style("stroke", "rgba(148,163,184,0.7)"));
+
+    const brush = d3.brushX()
+      .extent([[0,0],[innerW,innerH]])
+      .on("brush end", ({selection})=>{
+        if (selection){
+          const [x0,x1] = selection;
+          const y0 = Math.round(x.invert(x0));
+          const y1 = Math.round(x.invert(x1));
+          timeWindow = [y0,y1];
+          renderChord();
+          updatePurposes();
+        } else {
+          timeWindow = null;
+          renderChord();
+          updatePurposes();
+        }
+      });
+
+    const brushG = g.append("g").attr("class","brush").call(brush);
+    if (timeWindow){
+      brushG.call(brush.move, timeWindow.map(x));
+    }
+
+    const contextLabel = title || selectedCountry;
+    g.append("text")
+      .attr("x", 0)
+      .attr("y", -6)
+      .style("font-size","11px")
+      .style("fill","#a5b4fc")
+      .text(`${contextLabel} over time — outgoing (above) & incoming (below), amount (USD)`);
+
+    return;
+  }
+
+  const yAccessor = (timeMode === "share")
+    ? (d => d.share)
+    : (d => d.amount);
+
+  const maxY = d3.max(series, yAccessor) || 0;
+  if (maxY <= 0){
+    g.append("text")
+      .attr("x", innerW/2)
+      .attr("y", innerH/2)
+      .attr("text-anchor","middle")
+      .style("fill","#9ca3af")
+      .text("No aid recorded for this selection.");
+    return;
+  }
+
+  const y = d3.scaleLinear()
+    .domain([0, maxY]).nice()
+    .range([innerH, 0]);
 
   const area = d3.area()
-    .x(d=>x(d.data.year))
-    .y0(d=>y(d[0]))
-    .y1(d=>y(d[1]));
+    .x(d => x(d.year))
+    .y0(innerH)
+    .y1(d => y(yAccessor(d)))
+    .curve(d3.curveMonotoneX);
+
+  const defs = svg.append("defs");
+  const grad = defs.append("linearGradient")
+    .attr("id","timeAreaGradient")
+    .attr("x1","0%").attr("x2","0%")
+    .attr("y1","0%").attr("y2","100%");
+  grad.append("stop").attr("offset","0%").attr("stop-color","#aaaaaa").attr("stop-opacity",0.9);
+  grad.append("stop").attr("offset","100%").attr("stop-color","#020617").attr("stop-opacity",0.0);
+
+  g.append("path")
+    .datum(series)
+    .attr("fill","url(#timeAreaGradient)")
+    .attr("stroke","#aaaaaa")
+    .attr("stroke-width",1.4)
+    .attr("d", area);
 
   g.append("g")
-    .selectAll("path")
-    .data(stack)
-    .join("path")
-    .attr("d", area)
-    .attr("fill", d=>color(d.key))
-    .attr("fill-opacity", 0.85)
-    .on("mouseover", (event,d)=>{
-      showTooltip(event, `<b>${d.key}</b>`);
-      d3.select(event.currentTarget).attr("fill-opacity",1);
-    })
-    .on("mousemove", moveTooltip)
-    .on("mouseout", (event)=>{
-      onMouseOut();
-      d3.select(event.currentTarget).attr("fill-opacity",0.85);
-    });
-
-  g.append("g").call(d3.axisLeft(y).ticks(4).tickFormat(timeMode==="share"?fmtPct:fmtUSD))
-    .call(g => g.selectAll("text").style("fill","#cbd2dc"))
-    .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
-    .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
-
-  g.append("g").attr("transform", `translate(0,${innerH})`)
+    .attr("transform", `translate(0,${innerH})`)
     .call(d3.axisBottom(x).ticks(6).tickFormat(d3.format("d")))
-    .call(g => g.selectAll("text").style("fill","#cbd2dc"))
-    .call(g => g.selectAll("line").style("stroke","rgba(255,255,255,0.12)"))
-    .call(g => g.selectAll("path").style("stroke","rgba(255,255,255,0.25)"));
+    .call(g => g.selectAll("text").style("fill", "#cbd2dc"))
+    .call(g => g.selectAll("line").style("stroke", "rgba(148,163,184,0.4)"))
+    .call(g => g.selectAll("path").style("stroke", "rgba(148,163,184,0.7)"));
 
-  // simple legend (top 6)
-  const legKeys = partners.slice(0,6);
-  const leg = g.append("g").attr("transform","translate(0,-6)");
-  legKeys.forEach((p,i)=>{
-    const row = leg.append("g").attr("transform",`translate(${i*innerW/6},0)`);
-    row.append("rect").attr("width",10).attr("height",10).attr("fill", color(p)).attr("y",-10);
-    row.append("text").text(p).attr("x",14).attr("y",-1).style("font-size","10px").style("fill","#cbd2dc");
-  });
+  const yAxis = d3.axisLeft(y)
+    .ticks(4)
+    .tickFormat(timeMode === "share" ? d3.format(".0%") : fmtUSD);
 
-  // Brush (time window)
-  const brushH = 26;
-  const brushY = innerH + 8;
-  const xBrush = x.copy();
-
-  const brushG = g.append("g").attr("transform", `translate(0,${brushY})`);
-  brushG.append("g")
-    .call(d3.axisBottom(xBrush).ticks(0).tickSize(0))
-    .call(g => g.select(".domain")
-      .style("stroke","rgba(255,255,255,0.15)")
-    );
+  g.append("g")
+    .call(yAxis)
+    .call(g => g.selectAll("text").style("fill", "#cbd2dc"))
+    .call(g => g.selectAll("line").style("stroke", "rgba(148,163,184,0.25)"))
+    .call(g => g.selectAll("path").style("stroke", "rgba(148,163,184,0.7)"));
 
   const brush = d3.brushX()
-    .extent([[0, 0], [innerW, brushH]])
-    .on("end", ({selection})=>{
-      if (!selection){
-        timeWindow = null;
+    .extent([[0,0],[innerW,innerH]])
+    .on("brush end", ({selection})=>{
+      if (selection){
+        const [x0,x1] = selection;
+        const y0 = Math.round(x.invert(x0));
+        const y1 = Math.round(x.invert(x1));
+        timeWindow = [y0,y1];
+        renderChord();
+        updatePurposes();
       } else {
-        const y0 = Math.round(xBrush.invert(selection[0]));
-        const y1 = Math.round(xBrush.invert(selection[1]));
-        timeWindow = [Math.min(y0,y1), Math.max(y0,y1)];
+        timeWindow = null;
+        renderChord();
+        updatePurposes();
       }
-      renderChord(); // update vis1 using window
-      highlightSelection();
     });
 
-  brushG.append("g").attr("class","brush").call(brush);
+  const brushG = g.append("g").attr("class","brush").call(brush);
+  if (timeWindow){
+    brushG.call(brush.move, timeWindow.map(x));
+  }
+
+  const modeLabel = (timeMode === "share") ? "share of global flows" : "amount (USD)";
+  const contextLabel = (selectedPair || selectedCountry) ? title : "Global aid volume";
+
+  g.append("text")
+    .attr("x", 0)
+    .attr("y", -6)
+    .style("font-size","11px")
+    .style("fill","#a5b4fc")
+    .text(`${contextLabel} over time — ${modeLabel} (brush to filter)`);
 }
 
 /** =========================
  *  Global UI
  *  ========================= */
 function attachGlobalUI(){
-  d3.select("#resetBtn").on("click", ()=>{
-    selectedPair = null;
-    selectedCountry = null;
-    timeWindow = null;
-    renderChord();
+  fromSel = d3.select("#fromSelect"); 
+  toSel   = d3.select("#toSelect");    
+
+  function rebuildFromOptions() {
+    fromSel.selectAll("option").remove();
+    fromSel.append("option")
+      .attr("value", "__all__")
+      .text("All countries");
+
+    if (!nodes || !nodes.length) return;
+
+    nodes.forEach(name => {
+      fromSel.append("option")
+        .attr("value", name)
+        .text(name);
+    });
+  }
+
+  function rebuildToOptions(firstVal) {
+    toSel.selectAll("option").remove();
+    toSel.append("option")
+      .attr("value", "__all__")
+      .text(firstVal === "__all__" ? "All countries" : "Related countries");
+
+    if (!nodes || !nodes.length) return;
+
+    if (!arcMatrix || !arcMatrix.length || firstVal === "__all__") {
+      nodes.forEach(name => {
+        toSel.append("option")
+          .attr("value", name)
+          .text(name);
+      });
+      return;
+    }
+
+    const i = nodes.indexOf(firstVal);
+    if (i < 0) return;
+
+    const connectedIdx = new Set();
+    for (let j = 0; j < nodes.length; j++) {
+      const out_ij = (arcMatrix[i][j] || 0);
+      const out_ji = (arcMatrix[j][i] || 0);
+      if (out_ij > 0 || out_ji > 0) {
+        connectedIdx.add(j);
+      }
+    }
+
+    nodes.forEach((name, idx) => {
+      if (connectedIdx.has(idx)) {
+        toSel.append("option")
+          .attr("value", name)
+          .text(name);
+      }
+    });
+  }
+
+  function applySelection() {
+    const first  = fromSel.node().value;
+    const second = toSel.node().value;
+
+    if (first === "__all__" && second === "__all__") {
+      selectedCountry = null;
+      selectedPair    = null;
+    } else if (first !== "__all__" && second === "__all__") {
+      selectedCountry = first;
+      selectedPair    = null;
+    } else if (first === "__all__" && second !== "__all__") {
+      selectedCountry = second;
+      selectedPair    = null;
+    } else {
+      const i = nodes.indexOf(first);
+      const j = nodes.indexOf(second);
+
+      let donor = first;
+      let recip = second;
+
+      if (arcMatrix && arcMatrix.length && i >= 0 && j >= 0) {
+        const out_ij = arcMatrix[i][j] || 0;
+        const out_ji = arcMatrix[j][i] || 0;
+
+        if (out_ij <= 0 && out_ji > 0) {
+          donor = second;
+          recip = first;
+        } else if (out_ij > 0 && out_ji > 0 && out_ji > out_ij) {
+          donor = second;
+          recip = first;
+        }
+      }
+
+      selectedCountry = null;
+      selectedPair    = { donor, recipient: recip };
+    }
+
     highlightSelection();
     updatePurposes();
     updateTimeVis();
-    d3.select("#vis2Hint").text("Select a ribbon or country.");
-    d3.select("#vis3Hint").text("Select a ribbon (pair) or country.");
-  });
-
-  d3.select("#modeAmt").on("click", ()=>{
-    timeMode="amount";
-    d3.select("#modeAmt").classed("active",true);
-    d3.select("#modeShare").classed("active",false);
-    updateTimeVis();
-  });
-
-  d3.select("#modeShare").on("click", ()=>{
-    timeMode="share";
-    d3.select("#modeAmt").classed("active",false);
-    d3.select("#modeShare").classed("active",true);
-    updateTimeVis();
-  });
-}
-
-/** =========================
- *  Tooltip helpers
- *  ========================= */
-let tooltip = null;
-
-function showTooltip(event, html){
-  if (!tooltip){
-    tooltip = d3.select("body").append("div").attr("class","tooltip");
   }
-  tooltip.html(html).style("opacity",1);
-  moveTooltip(event);
+
+  fromSel.on("change", () => {
+    const firstVal = fromSel.node().value;
+    rebuildToOptions(firstVal);
+    toSel.property("value", "__all__");
+    applySelection();
+  });
+
+  toSel.on("change", applySelection);
+
+  rebuildFromOptions();
+  rebuildToOptions("__all__");
+  fromSel.property("value", "__all__");
+  toSel.property("value", "__all__");
+
+  d3.select("#timeAmountBtn").on("click", function(){
+    timeMode = "amount";
+    d3.selectAll(".toggle-group button").classed("active", false);
+    d3.select(this).classed("active", true);
+    updateTimeVis();
+  });
+
+  d3.select("#timeShareBtn").on("click", function(){
+    timeMode = "share";
+    d3.selectAll(".toggle-group button").classed("active", false);
+    d3.select(this).classed("active", true);
+    updateTimeVis();
+  });
+
+  d3.select("#resetSelectionBtn").on("click", () => {
+    selectedPair    = null;
+    selectedCountry = null;
+    timeWindow      = null;
+
+    fromSel.property("value", "__all__");
+    rebuildToOptions("__all__");
+    toSel.property("value", "__all__");
+
+    renderChord();
+    updatePurposes();
+    updateTimeVis();
+  });
 }
 
-function moveTooltip(event){
-  if (!tooltip) return;
-  const [x,y] = d3.pointer(event, document.body);
-  tooltip.style("left", x+"px").style("top", y+"px");
+
+function onArcClick(country){
+  selectedCountry = country;
+  selectedPair = null;
+
+  // Sync dropdowns: From = country, To = all reachable or all
+  if (fromSel && toSel){
+    fromSel.property("value", country);
+
+    // Rebuild "To" options based on this country as source
+    toSel.selectAll("option").remove();
+    toSel.append("option")
+      .attr("value", "__all__")
+      .text("All countries");
+
+    if (nodes && nodes.length && arcMatrix && arcMatrix.length){
+      const i = nodes.indexOf(country);
+      if (i >= 0){
+        for (let j = 0; j < nodes.length; j++){
+          const v = (arcMatrix[i][j] || 0);
+          if (v > 0){
+            const nm = nodes[j];
+            toSel.append("option")
+              .attr("value", nm)
+              .text(nm);
+          }
+        }
+      }
+    }
+
+    toSel.property("value", "__all__");
+  }
+
+  highlightSelection();
+  updatePurposes();
+  updateTimeVis();
 }
 
-function onMouseOut(){
-  if (tooltip) tooltip.style("opacity", 0);
+function highlightSelection(){
+  const hasSelection = !!(selectedPair || selectedCountry);
 
-  if (selectedPair || selectedCountry){
-    highlightSelection();  
+  const groupPaths = d3.selectAll(".group path");
+  const ribbons = d3.selectAll(".ribbon");
+
+  if (selectedPair){
+    const a = selectedPair.donor;
+    const b = selectedPair.recipient;
+
+    // Highlight only the two countries involved in the selected flow
+    groupPaths
+      .attr("fill-opacity", d => {
+        const name = nodes[d.index];
+        return (name === a || name === b) ? 1 : 0.08;
+      })
+      .attr("stroke-opacity", d => {
+        const name = nodes[d.index];
+        return (name === a || name === b) ? 1 : 0.08;
+      })
+      .attr("stroke-width", d => {
+        const name = nodes[d.index];
+        return (name === a || name === b) ? 2 : 1;
+      });
+
+    // Only keep the selected arrow fully visible
+    ribbons
+      .attr("fill-opacity", r =>
+        (nodes[r.source.index] === a && nodes[r.target.index] === b) ? 0.95 : 0.06
+      )
+      .attr("stroke-opacity", r =>
+        (nodes[r.source.index] === a && nodes[r.target.index] === b) ? 0.95 : 0.06
+      );
+
+  } else if (selectedCountry){
+    const c = selectedCountry;
+    const idxC = nodes.indexOf(c);
+    const connected = new Set();
+
+    if (idxC >= 0 && arcMatrix && arcMatrix.length){
+      connected.add(idxC);
+      for (let j = 0; j < arcMatrix.length; j++){
+        const vOut = (arcMatrix[idxC][j] || 0);
+        const vIn  = (arcMatrix[j][idxC] || 0);
+        if (vOut > 0 || vIn > 0){
+          connected.add(j);
+        }
+      }
+    }
+
+    // Highlight the selected country and all countries that exchange aid with it
+    groupPaths
+      .attr("fill-opacity", d => connected.has(d.index) ? 1 : 0.08)
+      .attr("stroke-opacity", d => connected.has(d.index) ? 1 : 0.08)
+      .attr("stroke-width", d => nodes[d.index] === c ? 2 : 1);
+
+    ribbons
+      .attr("fill-opacity", r =>
+        (nodes[r.source.index] === c || nodes[r.target.index] === c) ? 0.9 : 0.08
+      )
+      .attr("stroke-opacity", r =>
+        (nodes[r.source.index] === c || nodes[r.target.index] === c) ? 0.9 : 0.08
+      );
+
   } else {
-    d3.selectAll(".ribbon")
+    // No selection: reset all opacities
+    groupPaths
+      .attr("fill-opacity", 1)
+      .attr("stroke-opacity", 1)
+      .attr("stroke-width", 1);
+
+    ribbons
       .attr("fill-opacity", 0.75)
       .attr("stroke-opacity", 1);
+  }
+
+  d3.select("#vis2Empty").style("display", hasSelection ? "none" : "flex");
+  d3.select("#vis3Empty").style("display", hasSelection ? "none" : "flex");
+}
+
+// ====== OVERRIDDEN / UPDATED CHORD + COLOR LOGIC (BASED ON IN/OUT FLOWS) ======
+
+function renderChord(){
+  const svg = d3.select("#chordSvg");
+  svg.selectAll("*").remove();
+
+  const width  = svg.node().clientWidth;
+  const height = svg.node().clientHeight;
+  const innerRadius = Math.min(width, height) * 0.35;
+  const outerRadius = innerRadius * 1.1;
+
+  svg.attr("viewBox", [-width/2, -height/2, width, height]);
+
+  const root = svg.append("g");
+  const defs = svg.append("defs");
+
+  const matrix = buildMatrix(timeWindow);
+  arcMatrix = matrix;
+
+  const n = matrix.length;
+  arcOutgoing = Array(n).fill(0);
+  arcIncoming = Array(n).fill(0);
+
+  for (let i = 0; i < n; i++){
+    for (let j = 0; j < n; j++){
+      const v = matrix[i][j];
+      arcOutgoing[i] += v;
+      arcIncoming[j] += v;
+    }
+  }
+
+  // Net flow is defined as incoming - outgoing (positive = net recipient, negative = net donor)
+  netVals = d3.range(n).map(i => arcIncoming[i] - arcOutgoing[i]);
+  const maxAbsNet = d3.max(netVals, v => Math.abs(v)) || 1;
+
+  // Color scales for net donors (outgoing) and net recipients (incoming)
+  const donorScale = d3.scaleSequential()
+    .domain([0, maxAbsNet])
+    .interpolator(d3.interpolatePuBu);
+
+  const recipScale = d3.scaleSequential()
+    .domain([0, maxAbsNet])
+    .interpolator(d3.interpolateReds);
+
+  function nodeFill(i){
+    const net = netVals[i];
+    if (net > 0){
+      // Net recipient: more incoming than outgoing
+      return recipScale(net);
+    } else if (net < 0){
+      // Net donor: more outgoing than incoming
+      return donorScale(-net);
+    } else {
+      return "#d9d9d9";
+    }
+  }
+
+  nodeColors = nodes.map((_, i) => nodeFill(i));
+
+  const chord = d3.chordDirected()
+    .padAngle(0.03)
+    .sortSubgroups(d3.descending)
+    (matrix);
+
+  const arc = d3.arc()
+    .innerRadius(innerRadius)
+    .outerRadius(outerRadius);
+
+  const ribbon = d3.ribbonArrow()
+    .radius(innerRadius - 1)
+    .padAngle(1 / innerRadius);
+
+  const group = root.append("g")
+    .selectAll("g")
+    .data(chord.groups)
+    .join("g")
+    .attr("class", "group");
+
+  group.append("path")
+    .attr("fill", d => nodeFill(d.index))
+    .attr("stroke", d => d3.color(nodeFill(d.index)).darker(0.7))
+    .attr("d", arc)
+    .style("cursor","pointer")
+    .on("mouseover", onArcHover)
+    .on("mousemove", moveTooltip)
+    .on("mouseout", onMouseOut)
+    .on("click", (event, d) => onArcClick(nodes[d.index]));
+
+  group.append("text")
+    .each(d => (d.angle = (d.startAngle + d.endAngle) / 2))
+    .attr("dy", "0.35em")
+    .attr("transform", d => `
+      rotate(${(d.angle * 180 / Math.PI - 90)})
+      translate(${outerRadius + 10})
+      ${d.angle > Math.PI ? "rotate(180)" : ""}
+    `)
+    .attr("text-anchor", d => d.angle > Math.PI ? "end" : "start")
+    .text(d => nodes[d.index])
+    .style("font-size", "10px")
+    .style("fill", "#d7dbe3");
+
+  root.append("g")
+    .attr("class", "ribbons")
+    .attr("fill-opacity", 0.85)
+    .selectAll("path")
+    .data(chord)
+    .join("path")
+    .attr("class", "ribbon")
+    .each(function(d){
+      const gradId = `grad-${d.source.index}-${d.target.index}`;
+
+      // Use a gradient in *data space* so that colors near each country
+      // anchor match that country's node color.
+      const srcAngle = (d.source.startAngle + d.source.endAngle) / 2 - Math.PI / 2;
+      const tgtAngle = (d.target.startAngle + d.target.endAngle) / 2 - Math.PI / 2;
+
+      const x1 = Math.cos(srcAngle) * innerRadius;
+      const y1 = Math.sin(srcAngle) * innerRadius;
+      const x2 = Math.cos(tgtAngle) * innerRadius;
+      const y2 = Math.sin(tgtAngle) * innerRadius;
+
+      const grad = defs.append("linearGradient")
+        .attr("id", gradId)
+        .attr("gradientUnits", "userSpaceOnUse")
+        .attr("x1", x1)
+        .attr("y1", y1)
+        .attr("x2", x2)
+        .attr("y2", y2);
+
+      grad.append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", nodeColors[d.source.index]);
+
+      grad.append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", nodeColors[d.target.index]);
+
+      d._gradId = gradId;
+    })
+    .attr("fill", d => `url(#${d._gradId})`)
+    .attr("stroke", "none")
+    .attr("d", ribbon)
+    .style("cursor","pointer")
+    .on("mouseover", onRibbonHover)
+    .on("mousemove", moveTooltip)
+    .on("mouseout", onMouseOut)
+    .on("click", onRibbonClick);
+
+  drawChordLegend();
+  highlightSelection();
+}
+
+function onArcHover(event, d){
+  const country = nodes[d.index];
+
+  // Only keep the hovered country fully visible; all others fade
+  d3.selectAll(".group path")
+    .attr("fill-opacity", g => g.index === d.index ? 1 : 0.08)
+    .attr("stroke-opacity", g => g.index === d.index ? 1 : 0.08)
+    .attr("stroke-width", g => g.index === d.index ? 2 : 1);
+
+  // Highlight ribbons connected to this country, fade out others
+  d3.selectAll(".ribbon")
+    .attr("fill-opacity", r =>
+      (r.source.index === d.index || r.target.index === d.index) ? 0.9 : 0.06
+    )
+    .attr("stroke-opacity", r =>
+      (r.source.index === d.index || r.target.index === d.index) ? 0.9 : 0.06
+    );
+
+  const i = d.index;
+  const outgoing = arcOutgoing[i] || 0;
+  const incoming = arcIncoming[i] || 0;
+
+  showTooltip(event, `
+    <b>${country}</b><br/>
+    Outgoing: ${fmtUSD(outgoing)}<br/>
+    Incoming: ${fmtUSD(incoming)}<br/>
+    Total: ${fmtUSD(outgoing + incoming)}
+  `);
+}
+
+function onRibbonHover(event, d){
+  d3.selectAll(".ribbon")
+    .attr("fill-opacity", 0.06)
+    .attr("stroke-opacity", 0.06);
+
+  d3.select(event.currentTarget)
+    .attr("fill-opacity", 0.95)
+    .attr("stroke-opacity", 0.95);
+
+  const donor = nodes[d.source.index];
+  const recip = nodes[d.target.index];
+  const val = d.source.value;
+
+  showTooltip(event, `
+    <b>${donor} → ${recip}</b><br/>
+    Total: ${fmtUSD(val)}
+  `);
+}
+
+function onRibbonClick(event, d){
+  const donor = nodes[d.source.index];
+  const recip = nodes[d.target.index];
+
+  selectedPair = { donor, recipient: recip };
+  selectedCountry = null;
+
+  // Sync dropdowns: From = donor, To = this recipient
+  if (fromSel && toSel){
+    fromSel.property("value", donor);
+
+    // Rebuild "To" based on donor
+    toSel.selectAll("option").remove();
+    toSel.append("option")
+      .attr("value", "__all__")
+      .text("All countries");
+
+    if (nodes && nodes.length && arcMatrix && arcMatrix.length){
+      const i = nodes.indexOf(donor);
+      if (i >= 0){
+        for (let j = 0; j < nodes.length; j++){
+          const v = (arcMatrix[i][j] || 0);
+          if (v > 0){
+            const nm = nodes[j];
+            toSel.append("option")
+              .attr("value", nm)
+              .text(nm);
+          }
+        }
+      }
+    }
+
+    toSel.property("value", recip);
+  }
+
+  highlightSelection();
+  updatePurposes();
+  updateTimeVis();
+}
+
+function drawChordLegend(){
+  const legend = d3.select("#chordLegend");
+  legend.selectAll("*").remove();
+
+  if (!nodes.length || !arcOutgoing.length || !arcIncoming.length) return;
+
+  // Gradient legend encoding net position (incoming - outgoing)
+  // Blue → Gray → Orange (net donor → neutral → net recipient)
+  const gradBlock = legend.append("div")
+    .attr("class","legend-gradient-block");
+  
+  const donorMaxColor = d3.interpolatePuBu(1);
+  const recipMaxColor = d3.interpolateReds(1);
+
+  gradBlock.append("div")
+    .attr("class","legend-gradient-bar")
+    .style("background", `linear-gradient(to right, ${donorMaxColor}, #fff, ${recipMaxColor})`);
+
+  const gradLabels = gradBlock.append("div")
+    .attr("class","legend-gradient-labels");
+
+  gradLabels.append("span").text("Net donor (more outgoing)");
+  gradLabels.append("span").text("Net recipient (more incoming)");
+
+  const totals = nodes.map((name, i) => ({
+    name,
+    total: (arcOutgoing[i] || 0) + (arcIncoming[i] || 0),
+    color: nodeColors[i] || "#999"
+  }));
+
+  const sorted = totals
+    .slice()
+    .sort((a, b) => d3.descending(a.total, b.total));
+
+  const sample = sorted.slice(0, Math.min(sorted.length, 12));
+
+  sample.forEach(d => {
+    const row = legend.append("div")
+      .style("display", "flex")
+      .style("gap", "6px")
+      .style("align-items", "center");
+
+    row.append("div")
+      .style("width", "10px")
+      .style("height", "10px")
+      .style("background", d.color)
+      .style("border-radius", "2px");
+
+    row.append("div")
+      .text(`${d.name} — ${fmtUSD(d.total)}`);
+  });
+
+  if (sorted.length > 12){
+    legend.append("div").text("…");
   }
 }
 </script>
