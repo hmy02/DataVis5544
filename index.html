@@ -1545,7 +1545,10 @@ function renderChord(){
       d._gradId = gradId;
     })
     .attr("fill", d => `url(#${d._gradId})`)
-    .attr("stroke", "none")
+    .attr("stroke", d => `url(#${d._gradId})`)   // 轮廓也用同一个渐变
+    .attr("stroke-width", 0.6)                   // 自己试 0.4~1 之间
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-linecap", "round")
     .attr("d", ribbon)
     .style("cursor","pointer")
     .on("mouseover", onRibbonHover)
