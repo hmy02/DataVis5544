@@ -855,17 +855,18 @@ function updateTimeVis(){
 
   const g = svg.append("g").attr("transform", `translate(${pad.left},${pad.top})`);
 
-  if (!raw.length){
+  const base = dataFiltered;
+  if (!base.length){
     g.append("text")
       .attr("x", innerW/2)
       .attr("y", innerH/2)
       .attr("text-anchor","middle")
       .style("fill","#9ca3af")
-      .text("Loading...");
+      .text("No data for top donors/recipients.");
     return;
   }
 
-  const yearExtent = d3.extent(raw, d => d.year);
+   const yearExtent = d3.extent(base, d => d.year);
   if (!yearExtent || yearExtent[0] == null){
     g.append("text")
       .attr("x", innerW/2)
@@ -877,7 +878,7 @@ function updateTimeVis(){
   }
 
   const yearList = d3.range(yearExtent[0], yearExtent[1] + 1);
-  const globalByYear = d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.year);
+  const globalByYear = d3.rollup(base, v => d3.sum(v, d => d.amount), d => d.year);
 
   let title = "";
   let series = [];
