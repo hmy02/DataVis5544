@@ -366,7 +366,8 @@
       color: var(--muted);
       margin-top: 2px;
     }
-.empty {
+    
+    .empty {
       font-size: 12px;
       color: var(--muted);
       padding: 12px;
@@ -524,6 +525,7 @@ let topDonors = [];
 let topRecipients = [];
 let topPurposes = [];
 let nodes = [];
+let nodeIndex = new Map();
 let allDonors = [];
 let allRecipients = [];
 
@@ -664,19 +666,17 @@ d3.csv(DATA_URL, d => ({
   const purpTotals = Array.from(
     d3.rollup(raw, v => d3.sum(v, d => d.amount), d => d.purpose)
   ).sort((a, b) => d3.descending(a[1], b[1]));
+
   topDonors = donors;
   topRecipients = recips;
   topPurposes = purpTotals.slice(0, TOP_N_PURPOSE).map(d => d[0]);
 
-  const palette = d3.schemeSet2.concat(d3.schemeTableau10);
-  purposeColor = d3.scaleOrdinal()
-    .domain(topPurposes.concat("other"))
-    .range(palette.slice(0, topPurposes.length + 1));
+  nodes = Array.from(new Set([...topDonors, ...topRecipients])).sort(d3.ascending);
+  nodeIndex = new Map(nodes.map((n, i) => [n, i]));
 
-  allDonors = Array.from(new Set(raw.map(d => d.donor))).sort(d3.ascending);
-  allRecipients = Array.from(new Set(raw.map(d => d.recipient))).sort(d3.ascending);
-
-  nodes = Array.from(new Set([...allDonors, ...allRecipients])).sort(d3.ascending);
+  dataFiltered = raw.filter(d =>
+    topDonors.includes(d.donor) && topRecipients.includes(d.recipient)
+  );
 
   renderChord();
   updatePurposes();
@@ -690,28 +690,21 @@ d3.csv(DATA_URL, d => ({
  *  Matrix builder for chord
  *  ========================= */
 function buildMatrix(tWindow){
-  let df = raw;
+  let df = dataFiltered;
 
   if (tWindow){
-    const [y0,y1] = tWindow;
-    df = raw.filter(d => d.year >= y0 && d.year <= y1);
+    const [y0, y1] = tWindow;
+    df = df.filter(d => d.year >= y0 && d.year <= y1);
   }
 
-  const map = new Map();
-  df.forEach(d => {
-    const key = `${d.donor}||${d.recipient}`;
-    const prev = map.get(key) || 0;
-    map.set(key, prev + d.amount);
-  });
-
   const n = nodes.length;
-  const base = Array.from({length:n}, () => Array(n).fill(0));
+  const base = Array.from({length: n}, () => Array(n).fill(0));
 
-  nodes.forEach((donor,i) => {
-    nodes.forEach((recip,j) => {
-      const key = `${donor}||${recip}`;
-      base[i][j] = map.get(key) || 0;
-    });
+  df.forEach(d => {
+    const i = nodeIndex.get(d.donor);
+    const j = nodeIndex.get(d.recipient);
+    if (i == null || j == null) return;
+    base[i][j] += d.amount;
   });
 
   return base;
