@@ -34,7 +34,8 @@
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 50px;
+      gap: 20px;
+      min-height: calc(100vh - 32px);
     }
 
     header {
@@ -97,9 +98,10 @@
     main {
       display: grid;
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-      grid-template-rows: minmax(0, 380px) minmax(0, 260px);
+      grid-template-rows: 2fr 3fr;
       gap: 16px;
       align-items: stretch;
+      flex: 1;
     }
 
     #vis1 {
@@ -160,6 +162,91 @@
       overflow: hidden;
       position: relative;
     }
+    .panel-body.panel-body-chord {
+      padding: 6px 8px 8px;
+    }
+
+    .chord-layout {
+      display: flex;
+      height: 100%;
+      align-items: stretch;
+      gap: 0px;
+    }
+
+    .chord-left,
+    .chord-center,
+    .chord-right {
+      height: 100%;
+      display: flex;
+    }
+
+    .chord-left {
+      flex: 1;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chord-center {
+      flex: 20;
+    }
+
+    .chord-right {
+      flex: 1;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    #chordColorbar {
+      display: flex;
+      flex-direction: column;
+      align-items: left;
+      justify-content: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .chord-legend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--muted);
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .chord-legend-header {
+      font-size: 10px;
+      opacity: 0.9;
+      margin-bottom: 2px;
+    }
+
+    .chord-legend-item {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chord-legend-item-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      line-height: 1.2;
+    }
+
+    .chord-legend-item-text span.value {
+      opacity: 0.85;
+    }
+
+    .chord-legend-item-color {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
 
     svg {
       width: 100%;
@@ -386,10 +473,19 @@
           Reset selection
         </button>
       </div>
-      <div class="panel-body">
-        <svg id="chordSvg"></svg>
+      <div class="panel-body panel-body-chord">
+        <div class="chord-layout">
+          <div class="chord-left">
+            <div id="chordColorbar"></div>
+          </div>
+          <div class="chord-center">
+            <svg id="chordSvg"></svg>
+          </div>
+          <div class="chord-right">
+            <div id="chordLegend"></div>
+          </div>
+        </div>
       </div>
-      <div id="chordLegend" class="legend"></div>
     </div>
 
     <div id="vis2" class="panel">
@@ -411,8 +507,6 @@
     </div>
   </main>
 </div>
-
-<div id="tooltip" class="tooltip" style="opacity:0;"></div>
 
 <script>
 /** =========================
@@ -1560,29 +1654,44 @@ function onRibbonClick(event, d){
 }
 
 function drawChordLegend(){
-  const legend = d3.select("#chordLegend");
+  const colorbar = d3.select("#chordColorbar");
+  const legend   = d3.select("#chordLegend");
+
+  if (!colorbar.size() || !legend.size()) return;
+
+  colorbar.selectAll("*").remove();
   legend.selectAll("*").remove();
 
   if (!nodes.length || !arcOutgoing.length || !arcIncoming.length) return;
 
-  // Gradient legend encoding net position (incoming - outgoing)
-  // Blue → Gray → Orange (net donor → neutral → net recipient)
-  const gradBlock = legend.append("div")
-    .attr("class","legend-gradient-block");
-  
   const donorMaxColor = d3.interpolatePuBu(1);
   const recipMaxColor = d3.interpolateReds(1);
 
-  gradBlock.append("div")
-    .attr("class","legend-gradient-bar")
-    .style("background", `linear-gradient(to right, ${donorMaxColor}, #fff, ${recipMaxColor})`);
+  // ---- Color bar on the left ----
+  let barHeight = 120;
+  const panel = document.getElementById("vis1");
+  if (panel) {
+    const rect = panel.getBoundingClientRect();
+    barHeight = 0.65 * rect.height;
+  }
 
-  const gradLabels = gradBlock.append("div")
-    .attr("class","legend-gradient-labels");
+  const cb = colorbar;
 
-  gradLabels.append("span").text("Net donor (more outgoing)");
-  gradLabels.append("span").text("Net recipient (more incoming)");
+  cb.append("div")
+    .text("Net donor")
+    .style("font-size", "10px");
 
+  cb.append("div")
+    .style("width", "14px")
+    .style("height", barHeight + "px")
+    .style("border-radius", "999px")
+    .style("background", `linear-gradient(to bottom, ${donorMaxColor}, #ffffff, ${recipMaxColor})`);
+
+  cb.append("div")
+    .text("Net recipient")
+    .style("font-size", "10px");
+
+  // ---- Legend on the right ----
   const totals = nodes.map((name, i) => ({
     name,
     total: (arcOutgoing[i] || 0) + (arcIncoming[i] || 0),
@@ -1595,26 +1704,38 @@ function drawChordLegend(){
 
   const sample = sorted.slice(0, Math.min(sorted.length, 12));
 
+  const list = legend.append("div")
+    .attr("class", "chord-legend-list");
+
+  list.append("div")
+    .attr("class", "chord-legend-header")
+    .text("Top partners by total flows");
+
   sample.forEach(d => {
-    const row = legend.append("div")
-      .style("display", "flex")
-      .style("gap", "6px")
-      .style("align-items", "center");
+    const row = list.append("div")
+      .attr("class", "chord-legend-item");
+
+    const txt = row.append("div")
+      .attr("class", "chord-legend-item-text");
+
+    txt.append("span").text(d.name);
+    txt.append("span")
+      .attr("class", "value")
+      .text(fmtUSD(d.total));
 
     row.append("div")
-      .style("width", "10px")
-      .style("height", "10px")
-      .style("background", d.color)
-      .style("border-radius", "2px");
-
-    row.append("div")
-      .text(`${d.name} — ${fmtUSD(d.total)}`);
+      .attr("class", "chord-legend-item-color")
+      .style("background", d.color);
   });
 
-  if (sorted.length > 12){
-    legend.append("div").text("…");
+  if (sorted.length > sample.length){
+    list.append("div")
+      .style("opacity", 0.7)
+      .text("…");
   }
 }
+
+</script>
 </script>
 </body>
 </html>
