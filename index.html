@@ -885,7 +885,7 @@ function updateTimeVis(){
 
   if (selectedPair){
     const { donor, recipient } = selectedPair;
-    const dfPair = raw.filter(d => d.donor === donor && d.recipient === recipient);
+    const dfPair = base.filter(d => d.donor === donor && d.recipient === recipient);
     const amountByYear = d3.rollup(dfPair, v => d3.sum(v, d => d.amount), d => d.year);
 
     series = yearList.map(year => {
@@ -903,8 +903,8 @@ function updateTimeVis(){
   } else if (selectedCountry){
     const c = selectedCountry;
 
-    const out = raw.filter(d => d.donor === c);
-    const inc = raw.filter(d => d.recipient === c);
+    const out = base.filter(d => d.donor === c);
+    const inc = base.filter(d => d.recipient === c);
 
     const outByYear = d3.rollup(out, v => d3.sum(v, d => d.amount), d => d.year);
     const incByYear = d3.rollup(inc, v => d3.sum(v, d => d.amount), d => d.year);
