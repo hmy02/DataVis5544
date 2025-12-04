@@ -1220,28 +1220,30 @@ function attachGlobalUI(){
   toSel   = d3.select("#toSelect");    
   purposeSel = d3.select("#purposeSelect");
 
-  function rebuildPurposeOptions() {
-    if (!purposeSel.node()) return;
+function rebuildPurposeOptions() {
+  if (!purposeSel || !purposeSel.node()) return;
 
-    purposeSel.selectAll("option").remove();
-    purposeSel.append("option")
-      .attr("value", "__all__")
-      .text("All purposes");
+  const current = selectedPurpose || "__all__";
 
-    if (topPurposes && topPurposes.length) {
-      topPurposes.forEach(p => {
-        purposeSel.append("option")
-          .attr("value", p)
-          .text(p);
-      });
+  purposeSel.selectAll("option").remove();
+  purposeSel.append("option")
+    .attr("value", "__all__")
+    .text("All purposes");
 
+  if (topPurposes && topPurposes.length) {
+    topPurposes.forEach(p => {
       purposeSel.append("option")
-        .attr("value", "__other__")
-        .text("Other");
-    }
+        .attr("value", p)
+        .text(p);
+    });
 
-    purposeSel.property("value", selectedPurpose || "__all__");
+    purposeSel.append("option")
+      .attr("value", "__other__")
+      .text("Other");
   }
+
+  purposeSel.property("value", current);
+}
 
   function rebuildFromOptions() {
     fromSel.selectAll("option").remove();
@@ -1360,7 +1362,6 @@ function attachGlobalUI(){
   fromSel.property("value", "__all__");
   toSel.property("value", "__all__");
   purposeSel.property("value", "__all__");
-  selectedPurpose = "__all__";
 
   d3.select("#timeAmountBtn").on("click", function(){
     timeMode = "amount";
