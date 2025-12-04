@@ -462,18 +462,7 @@
           <option value="__all__">All countries</option>
         </select>
 
-        <label style="margin-left:8px;">Purpose:</label>
-          <select id="purposeSelect">
-            <option value="__all__">All purposes</option>
-          </select>
-
         <div style="flex:1"></div>  
-
-        <label>Time:</label>
-        <div class="toggle-group">
-          <button id="timeAmountBtn" class="active" data-mode="amount">Total amount</button>
-          <button id="timeShareBtn" data-mode="share">Share of total</button>
-        </div>
 
         <button id="resetSelectionBtn" class="secondary">
           Reset selection
@@ -498,6 +487,10 @@
       <div class="panel-header">
         <div>Main Development Purposes</div>
       </div>
+      <label style="margin-left:8px;">Purpose:</label>
+        <select id="purposeSelect">
+          <option value="__all__">All purposes</option>
+        </select>
       <div class="hint" id="vis2Hint">Select a flow or a country in the network view to see purpose composition.</div>
       <div class="panel-body"><svg id="purposeSvg"></svg></div>
       <div id="vis2Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
@@ -507,6 +500,11 @@
       <div class="panel-header">
         <div>Time Evolution of Aid Flows</div>
       </div>
+      <label>Time:</label>
+        <div class="toggle-group">
+          <button id="timeAmountBtn" class="active" data-mode="amount">Total amount</button>
+          <button id="timeShareBtn" data-mode="share">Share of total</button>
+        </div>
       <div class="hint">Brush on the area chart to constrain the time window for all views.</div>
       <div class="panel-body"><svg id="timeSvg"></svg></div>
       <div id="vis3Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
