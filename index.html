@@ -495,7 +495,7 @@
       </div>
       <div class="hint" id="vis2Hint">Select a flow or a country in the network view to see purpose composition.</div>
       <div class="panel-body"><svg id="purposeSvg"></svg></div>
-      <div id="vis2Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
+      <!-- <div id="vis2Empty" class="empty">No selection yet · Click a country or a flow in the network.</div> -->
     </div>
 
     <div id="vis3" class="panel">
@@ -512,7 +512,7 @@
       </div>
       <div class="hint">Brush on the area chart to constrain the time window for all views.</div>
       <div class="panel-body"><svg id="timeSvg"></svg></div>
-      <div id="vis3Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
+      <!-- <div id="vis3Empty" class="empty">No selection yet · Click a country or a flow in the network.</div> -->
     </div>
   </main>
 </div>
@@ -738,6 +738,19 @@ function updatePurposes(){
   const svg = d3.select("#purposeSvg");
   svg.selectAll("*").remove();
 
+  function applyPurposeOpacity(svg) {
+    const activeKey =
+      selectedPurpose === "__all__"  ? null :
+      selectedPurpose === "__other__"? "other" :
+      selectedPurpose;
+
+    svg.selectAll(".purpose-rect")
+      .attr("fill-opacity", d => {
+        if (!activeKey) return 1;
+        return d.purpose === activeKey ? 1 : 0.15;
+      });
+  }
+
   const w = svg.node().clientWidth;
   const h = svg.node().clientHeight;
 
@@ -850,17 +863,7 @@ function updatePurposes(){
     .on("mousemove", moveTooltip)
     .on("mouseout", function(){
       onMouseOut();
-
-      const activeKey =
-        selectedPurpose === "__all__"  ? null :
-        selectedPurpose === "__other__"? "other" :
-        selectedPurpose;
-
-      svg.selectAll(".purpose-rect")
-        .attr("fill-opacity", r => {
-          if (!activeKey) return 1;
-          return r.purpose === activeKey ? 1 : 0.15;
-        });
+      applyPurposeOpacity(svg);
     })
     .on("click", function(event, d){
       const clickedKey = (d.purpose === "other") ? "__other__" : d.purpose;
@@ -878,6 +881,7 @@ function updatePurposes(){
       renderChord();
       updateTimeVis();
       updatePurposes();
+      applyPurposeOpacity(svg);
     });
 
   g.append("g")
