@@ -738,7 +738,6 @@ function updatePurposes(){
   const svg = d3.select("#purposeSvg");
   svg.selectAll("*").remove();
 
-  // 内部 helper：根据 selectedPurpose 统一设置透明度
   function applyPurposeOpacity() {
     const svg = d3.select("#purposeSvg");
     if (svg.empty()) return;
@@ -768,13 +767,11 @@ function updatePurposes(){
   let series = [];
   let base = dataFiltered;
 
-  // 时间窗口过滤（purpose 图本身不按 purpose 过滤）
   if (timeWindow){
     const [y0, y1] = timeWindow;
     base = base.filter(d => d.year >= y0 && d.year <= y1);
   }
 
-  // 按 pair / country 过滤
   if (selectedPair){
     title = `${selectedPair.donor} → ${selectedPair.recipient}`;
     const df = base.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
@@ -869,8 +866,7 @@ function updatePurposes(){
     .on("mousemove", moveTooltip)
     .on("mouseout", function(){
       onMouseOut();
-      // 鼠标移开时恢复“真正选中”的透明度
-      applyPurposeOpacity();
+      applyPurposeOpacity(svg);
     })
     .on("click", function(event, d){
       const clickedKey = (d.purpose === "other") ? "__other__" : d.purpose;
@@ -884,8 +880,7 @@ function updatePurposes(){
       if (purposeSel && purposeSel.node()) {
         purposeSel.property("value", selectedPurpose);
       }
-      // 立即按新的 selectedPurpose 调透明度
-      applyPurposeOpacity();
+      applyPurposeOpacity(svg);
       renderChord();
       updateTimeVis();
     });
@@ -904,9 +899,6 @@ function updatePurposes(){
     row.append("rect").attr("width",10).attr("height",10).attr("fill", color(p)).attr("y",-8);
     row.append("text").text(p).attr("x",14).attr("y",1).style("font-size","11px").style("fill","#cbd2dc");
   });
-
-  // ★关键：每次重画完，自动按 selectedPurpose 统一应用透明度
-  applyPurposeOpacity();
 }
 
 /** =========================
