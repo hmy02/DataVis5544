@@ -765,7 +765,6 @@ function updatePurposes(){
 
   let title = "";
   let series = [];
-  let base = dataFiltered;
 
   if (timeWindow){
     const [y0, y1] = timeWindow;
@@ -866,7 +865,7 @@ function updatePurposes(){
     .on("mousemove", moveTooltip)
     .on("mouseout", function(){
       onMouseOut();
-      applyPurposeOpacity(svg);
+      applyPurposeOpacity();
     })
     .on("click", function(event, d){
       const clickedKey = (d.purpose === "other") ? "__other__" : d.purpose;
@@ -880,7 +879,7 @@ function updatePurposes(){
       if (purposeSel && purposeSel.node()) {
         purposeSel.property("value", selectedPurpose);
       }
-      applyPurposeOpacity(svg);
+      applyPurposeOpacity();
       renderChord();
       updateTimeVis();
     });
@@ -899,6 +898,8 @@ function updatePurposes(){
     row.append("rect").attr("width",10).attr("height",10).attr("fill", color(p)).attr("y",-8);
     row.append("text").text(p).attr("x",14).attr("y",1).style("font-size","11px").style("fill","#cbd2dc");
   });
+
+  applyPurposeOpacity();
 }
 
 /** =========================
