@@ -840,6 +840,7 @@ function updatePurposes(){
     .range(d3.schemeSet2.concat(d3.schemeTableau10));
 
   let acc = 0;
+  applyPurposeOpacity(svg);
   const rects = g.selectAll("rect")
     .data(series)
     .join("rect")
