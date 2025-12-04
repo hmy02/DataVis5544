@@ -462,6 +462,11 @@
           <option value="__all__">All countries</option>
         </select>
 
+        <label style="margin-left:8px;">Purpose:</label>
+          <select id="purposeSelect">
+            <option value="__all__">All purposes</option>
+          </select>
+
         <div style="flex:1"></div>  
 
         <label>Time:</label>
@@ -547,6 +552,9 @@ let indexSel = null;
 let pairStage = 0;   
 let firstCountry = null; 
 let purposeColor = null;
+
+let selectedPurpose = "__all__";
+let purposeSel = null;
 
 
 /** =========================
@@ -694,6 +702,14 @@ d3.csv(DATA_URL, d => ({
 function buildMatrix(tWindow){
   let df = dataFiltered;
 
+  if (selectedPurpose && selectedPurpose !== "__all__") {
+    if (selectedPurpose === "__other__") {
+      df = df.filter(d => !topPurposes.includes(d.purpose));
+    } else {
+      df = df.filter(d => d.purpose === selectedPurpose);
+    }
+  }
+
   if (tWindow){
     const [y0, y1] = tWindow;
     df = df.filter(d => d.year >= y0 && d.year <= y1);
@@ -731,6 +747,14 @@ function updatePurposes(){
   let title = "";
   let series = [];
   let base = dataFiltered;
+
+  if (selectedPurpose && selectedPurpose !== "__all__") {
+    if (selectedPurpose === "__other__") {
+      base = base.filter(d => !topPurposes.includes(d.purpose));
+    } else {
+      base = base.filter(d => d.purpose === selectedPurpose);
+    }
+  }
 
   if (timeWindow){
     const [y0, y1] = timeWindow;
@@ -857,7 +881,16 @@ function updateTimeVis(){
 
   const g = svg.append("g").attr("transform", `translate(${pad.left},${pad.top})`);
 
-  const base = dataFiltered;
+  let base = dataFiltered;
+  
+  if (selectedPurpose && selectedPurpose !== "__all__") {
+    if (selectedPurpose === "__other__") {
+      base = base.filter(d => !topPurposes.includes(d.purpose));
+    } else {
+      base = base.filter(d => d.purpose === selectedPurpose);
+    }
+  }
+
   if (!base.length){
     g.append("text")
       .attr("x", innerW/2)
@@ -1151,6 +1184,26 @@ function updateTimeVis(){
 function attachGlobalUI(){
   fromSel = d3.select("#fromSelect"); 
   toSel   = d3.select("#toSelect");    
+  purposeSel = d3.select("#purposeSelect");
+
+  function rebuildPurposeOptions() {
+    purposeSel.selectAll("option").remove();
+    purposeSel.append("option")
+      .attr("value", "__all__")
+      .text("All purposes");
+
+    if (topPurposes && topPurposes.length) {
+      topPurposes.forEach(p => {
+        purposeSel.append("option")
+          .attr("value", p)
+          .text(p);
+      });
+
+      purposeSel.append("option")
+        .attr("value", "__other__")
+        .text("Other");
+    }
+  }
 
   function rebuildFromOptions() {
     fromSel.selectAll("option").remove();
@@ -1256,10 +1309,19 @@ function attachGlobalUI(){
 
   toSel.on("change", applySelection);
 
+  purposeSel.on("change", () => {
+    selectedPurpose = purposeSel.node().value;
+    renderChord();
+    updatePurposes();
+    updateTimeVis();
+  });
+
   rebuildFromOptions();
   rebuildToOptions("__all__");
+  rebuildPurposeOptions(); 
   fromSel.property("value", "__all__");
   toSel.property("value", "__all__");
+  purposeSel.property("value", "__all__"); 
 
   d3.select("#timeAmountBtn").on("click", function(){
     timeMode = "amount";
