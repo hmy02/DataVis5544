@@ -734,25 +734,26 @@ function buildMatrix(tWindow){
 /** =========================
  *  VIS 2: PURPOSE STACKED BAR
  *  ========================= */
+
+function applyPurposeOpacity() {
+  const svg = d3.select("#purposeSvg");
+  if (svg.empty()) return;
+
+  const activeKey =
+    selectedPurpose === "__all__"   ? null :
+    selectedPurpose === "__other__" ? "other" :
+    selectedPurpose; 
+
+  svg.selectAll(".purpose-rect")
+    .attr("fill-opacity", d => {
+      if (!activeKey) return 1;   
+      return d.purpose === activeKey ? 1 : 0.15;
+    });
+}
+
 function updatePurposes(){
   const svg = d3.select("#purposeSvg");
   svg.selectAll("*").remove();
-
-  function applyPurposeOpacity() {
-    const svg = d3.select("#purposeSvg");
-    if (svg.empty()) return;
-
-    const activeKey =
-      selectedPurpose === "__all__"   ? null :
-      selectedPurpose === "__other__" ? "other" :
-      selectedPurpose; 
-
-    svg.selectAll(".purpose-rect")
-      .attr("fill-opacity", d => {
-        if (!activeKey) return 1;   
-        return d.purpose === activeKey ? 1 : 0.15;
-      });
-  }
 
   const w = svg.node().clientWidth;
   const h = svg.node().clientHeight;
@@ -765,6 +766,7 @@ function updatePurposes(){
 
   let title = "";
   let series = [];
+  let base = dataFiltered;
 
   if (timeWindow){
     const [y0, y1] = timeWindow;
@@ -772,7 +774,7 @@ function updatePurposes(){
   }
 
   if (selectedPair){
-    title = `${selectedPair.donor} → ${selectedPair.recipient}`;
+    title = `${selectedPair.donor} \u2192 ${selectedPair.recipient}`;
     const df = base.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
     const totals = d3.rollup(df, v => d3.sum(v, d => d.amount), d => d.purpose);
 
@@ -781,14 +783,12 @@ function updatePurposes(){
     for (const [p,v] of totals){
       if (!topPurposes.includes(p)) other += v;
     }
-    if (other>0) series.push({purpose:"other", amount: other});
+    if (other > 0){
+      series.push({purpose:"other", amount:other});
+    }
   } else if (selectedCountry){
-    const out = base.filter(d => d.donor===selectedCountry);
-    const inc = base.filter(d => d.recipient===selectedCountry);
-    const outSum = d3.sum(out,d=>d.amount);
-    const incSum = d3.sum(inc,d=>d.amount);
-    const df = outSum>=incSum ? out : inc;
-    title = outSum>=incSum ? `${selectedCountry} outgoing purposes` : `${selectedCountry} incoming purposes`;
+    title = `Flows related to ${selectedCountry}`;
+    const df = base.filter(d => d.donor===selectedCountry || d.recipient===selectedCountry);
     const totals = d3.rollup(df, v => d3.sum(v, d => d.amount), d => d.purpose);
 
     let other = 0;
@@ -796,36 +796,18 @@ function updatePurposes(){
     for (const [p,v] of totals){
       if (!topPurposes.includes(p)) other += v;
     }
-    if (other>0) series.push({purpose:"other", amount: other});
+    if (other > 0){
+      series.push({purpose:"other", amount:other});
+    }
   } else {
-    title = "Global main development purposes";
-    const totals = d3.rollup(
-      base,
-      v => d3.sum(v, d => d.amount),
-      d => d.purpose
-    );
-
-    let other = 0;
-    series = topPurposes.map(p => ({
-      purpose: p,
-      amount: totals.get(p) || 0
-    }));
-
-    for (const [p, v] of totals) {
-      if (!topPurposes.includes(p)) other += v;
-    }
-    if (other > 0) {
-      series.push({ purpose: "other", amount: other });
-    }
+    d3.select("#vis2Hint").text("Select a flow or a country in the network view to see purpose composition.");
+    d3.select("#vis2Empty").style("display","block");
+    return;
   }
 
-  // sort purposes by amount (descending) for the stacked bar
-  series.sort((a, b) => d3.descending(a.amount, b.amount));
-
-  d3.select("#vis2Hint").text(title);
-
   const total = d3.sum(series, d => d.amount);
-  if (!total || total<=0){
+  if (!total || total <= 0){
+    d3.select("#vis2Hint").text(title);
     g.append("text")
       .attr("x", innerW/2)
       .attr("y", innerH/2)
@@ -835,6 +817,11 @@ function updatePurposes(){
     return;
   }
 
+  d3.select("#vis2Hint").text(title);
+  d3.select("#vis2Empty").style("display","none");
+
+  series.sort((a, b) => d3.descending(a.amount, b.amount));
+
   const x = d3.scaleLinear().domain([0,total]).range([0, innerW]);
 
   const color = purposeColor || d3.scaleOrdinal()
@@ -842,10 +829,10 @@ function updatePurposes(){
     .range(d3.schemeSet2.concat(d3.schemeTableau10));
 
   let acc = 0;
-  const rects = g.selectAll("rect")
+  g.selectAll("rect")
     .data(series)
     .join("rect")
-    .attr("class", "purpose-rect")
+    .attr("class", "purpose-rect")  
     .attr("x", d => { const x0 = x(acc); acc += d.amount; return x0; })
     .attr("y", innerH/2 - 20)
     .attr("width", d => x(d.amount))
@@ -857,7 +844,6 @@ function updatePurposes(){
         event,
         `<b>${d.purpose}</b><br/>${fmtUSD(d.amount)} (${fmtPct(d.amount/total)})`
       );
-
       const hoverP = d.purpose;
       svg.selectAll(".purpose-rect")
         .attr("fill-opacity", r => r.purpose === hoverP ? 1 : 0.15);
@@ -869,19 +855,19 @@ function updatePurposes(){
     })
     .on("click", function(event, d){
       const clickedKey = (d.purpose === "other") ? "__other__" : d.purpose;
-
-      if (selectedPurpose === clickedKey) {
+      if (selectedPurpose === clickedKey){
         selectedPurpose = "__all__";
       } else {
         selectedPurpose = clickedKey;
       }
 
-      if (purposeSel && purposeSel.node()) {
+      if (purposeSel && purposeSel.node()){
         purposeSel.property("value", selectedPurpose);
       }
-      applyPurposeOpacity();
+
       renderChord();
       updateTimeVis();
+      updatePurposes();
     });
 
   g.append("g")
@@ -901,6 +887,7 @@ function updatePurposes(){
 
   applyPurposeOpacity();
 }
+
 
 /** =========================
  *  VIS 3: TIME VARIATION
