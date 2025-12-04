@@ -487,24 +487,29 @@
       <div class="panel-header">
         <div>Main Development Purposes</div>
       </div>
-      <label style="margin-left:8px;">Purpose:</label>
+      <div class="toolbar">
+      <label>Purpose:</label>
         <select id="purposeSelect">
           <option value="__all__">All purposes</option>
         </select>
+      </div>
       <div class="hint" id="vis2Hint">Select a flow or a country in the network view to see purpose composition.</div>
       <div class="panel-body"><svg id="purposeSvg"></svg></div>
       <div id="vis2Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
     </div>
 
     <div id="vis3" class="panel">
+      
       <div class="panel-header">
         <div>Time Evolution of Aid Flows</div>
       </div>
+      <div class="toolbar">
       <label>Time:</label>
         <div class="toggle-group">
           <button id="timeAmountBtn" class="active" data-mode="amount">Total amount</button>
           <button id="timeShareBtn" data-mode="share">Share of total</button>
         </div>
+      </div>
       <div class="hint">Brush on the area chart to constrain the time window for all views.</div>
       <div class="panel-body"><svg id="timeSvg"></svg></div>
       <div id="vis3Empty" class="empty">No selection yet · Click a country or a flow in the network.</div>
@@ -746,14 +751,6 @@ function updatePurposes(){
   let series = [];
   let base = dataFiltered;
 
-  if (selectedPurpose && selectedPurpose !== "__all__") {
-    if (selectedPurpose === "__other__") {
-      base = base.filter(d => !topPurposes.includes(d.purpose));
-    } else {
-      base = base.filter(d => d.purpose === selectedPurpose);
-    }
-  }
-
   if (timeWindow){
     const [y0, y1] = timeWindow;
     base = base.filter(d => d.year >= y0 && d.year <= y1);
@@ -830,19 +827,58 @@ function updatePurposes(){
     .range(d3.schemeSet2.concat(d3.schemeTableau10));
 
   let acc = 0;
-  g.selectAll("rect")
+  const rects = g.selectAll("rect")
     .data(series)
     .join("rect")
+    .attr("class", "purpose-rect")
     .attr("x", d => { const x0 = x(acc); acc += d.amount; return x0; })
     .attr("y", innerH/2 - 20)
     .attr("width", d => x(d.amount))
     .attr("height", 40)
     .attr("fill", d => color(d.purpose))
-    .on("mouseover", (event,d)=>{
-      showTooltip(event, `<b>${d.purpose}</b><br/>${fmtUSD(d.amount)} (${fmtPct(d.amount/total)})`);
+    .style("cursor", "pointer")
+    .on("mouseover", function(event,d){
+      showTooltip(
+        event,
+        `<b>${d.purpose}</b><br/>${fmtUSD(d.amount)} (${fmtPct(d.amount/total)})`
+      );
+
+      const hoverP = d.purpose;
+      svg.selectAll(".purpose-rect")
+        .attr("fill-opacity", r => r.purpose === hoverP ? 1 : 0.15);
     })
     .on("mousemove", moveTooltip)
-    .on("mouseout", onMouseOut);
+    .on("mouseout", function(){
+      onMouseOut();
+
+      const activeKey =
+        selectedPurpose === "__all__"  ? null :
+        selectedPurpose === "__other__"? "other" :
+        selectedPurpose;
+
+      svg.selectAll(".purpose-rect")
+        .attr("fill-opacity", r => {
+          if (!activeKey) return 1;
+          return r.purpose === activeKey ? 1 : 0.15;
+        });
+    })
+    .on("click", function(event, d){
+      const clickedKey = (d.purpose === "other") ? "__other__" : d.purpose;
+
+      if (selectedPurpose === clickedKey) {
+        selectedPurpose = "__all__";
+      } else {
+        selectedPurpose = clickedKey;
+      }
+
+      if (purposeSel && purposeSel.node()) {
+        purposeSel.property("value", selectedPurpose);
+      }
+
+      renderChord();
+      updateTimeVis();
+      updatePurposes();
+    });
 
   g.append("g")
     .attr("transform", `translate(0, ${innerH/2 + 26})`)
@@ -1185,6 +1221,8 @@ function attachGlobalUI(){
   purposeSel = d3.select("#purposeSelect");
 
   function rebuildPurposeOptions() {
+    if (!purposeSel.node()) return;
+
     purposeSel.selectAll("option").remove();
     purposeSel.append("option")
       .attr("value", "__all__")
@@ -1201,6 +1239,8 @@ function attachGlobalUI(){
         .attr("value", "__other__")
         .text("Other");
     }
+
+    purposeSel.property("value", selectedPurpose || "__all__");
   }
 
   function rebuildFromOptions() {
@@ -1319,7 +1359,8 @@ function attachGlobalUI(){
   rebuildPurposeOptions(); 
   fromSel.property("value", "__all__");
   toSel.property("value", "__all__");
-  purposeSel.property("value", "__all__"); 
+  purposeSel.property("value", "__all__");
+  selectedPurpose = "__all__";
 
   d3.select("#timeAmountBtn").on("click", function(){
     timeMode = "amount";
@@ -1339,10 +1380,15 @@ function attachGlobalUI(){
     selectedPair    = null;
     selectedCountry = null;
     timeWindow      = null;
+    selectedPurpose = "__all__";
 
     fromSel.property("value", "__all__");
     rebuildToOptions("__all__");
     toSel.property("value", "__all__");
+
+    if (purposeSel && purposeSel.node()) {
+      purposeSel.property("value", "__all__");
+    }
 
     renderChord();
     updatePurposes();
