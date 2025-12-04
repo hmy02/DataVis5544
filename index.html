@@ -734,26 +734,26 @@ function buildMatrix(tWindow){
 /** =========================
  *  VIS 2: PURPOSE STACKED BAR
  *  ========================= */
-
-function applyPurposeOpacity() {
-  const svg = d3.select("#purposeSvg");
-  if (svg.empty()) return;
-
-  const activeKey =
-    selectedPurpose === "__all__"   ? null :
-    selectedPurpose === "__other__" ? "other" :
-    selectedPurpose; 
-
-  svg.selectAll(".purpose-rect")
-    .attr("fill-opacity", d => {
-      if (!activeKey) return 1;   
-      return d.purpose === activeKey ? 1 : 0.15;
-    });
-}
-
 function updatePurposes(){
   const svg = d3.select("#purposeSvg");
   svg.selectAll("*").remove();
+
+  // 内部 helper：根据 selectedPurpose 统一设置透明度
+  function applyPurposeOpacity() {
+    const svg = d3.select("#purposeSvg");
+    if (svg.empty()) return;
+
+    const activeKey =
+      selectedPurpose === "__all__"   ? null :
+      selectedPurpose === "__other__" ? "other" :
+      selectedPurpose; 
+
+    svg.selectAll(".purpose-rect")
+      .attr("fill-opacity", d => {
+        if (!activeKey) return 1;   
+        return d.purpose === activeKey ? 1 : 0.15;
+      });
+  }
 
   const w = svg.node().clientWidth;
   const h = svg.node().clientHeight;
@@ -768,13 +768,15 @@ function updatePurposes(){
   let series = [];
   let base = dataFiltered;
 
+  // 时间窗口过滤（purpose 图本身不按 purpose 过滤）
   if (timeWindow){
     const [y0, y1] = timeWindow;
     base = base.filter(d => d.year >= y0 && d.year <= y1);
   }
 
+  // 按 pair / country 过滤
   if (selectedPair){
-    title = `${selectedPair.donor} \u2192 ${selectedPair.recipient}`;
+    title = `${selectedPair.donor} → ${selectedPair.recipient}`;
     const df = base.filter(d => d.donor===selectedPair.donor && d.recipient===selectedPair.recipient);
     const totals = d3.rollup(df, v => d3.sum(v, d => d.amount), d => d.purpose);
 
@@ -783,12 +785,14 @@ function updatePurposes(){
     for (const [p,v] of totals){
       if (!topPurposes.includes(p)) other += v;
     }
-    if (other > 0){
-      series.push({purpose:"other", amount:other});
-    }
+    if (other>0) series.push({purpose:"other", amount: other});
   } else if (selectedCountry){
-    title = `Flows related to ${selectedCountry}`;
-    const df = base.filter(d => d.donor===selectedCountry || d.recipient===selectedCountry);
+    const out = base.filter(d => d.donor===selectedCountry);
+    const inc = base.filter(d => d.recipient===selectedCountry);
+    const outSum = d3.sum(out,d=>d.amount);
+    const incSum = d3.sum(inc,d=>d.amount);
+    const df = outSum>=incSum ? out : inc;
+    title = outSum>=incSum ? `${selectedCountry} outgoing purposes` : `${selectedCountry} incoming purposes`;
     const totals = d3.rollup(df, v => d3.sum(v, d => d.amount), d => d.purpose);
 
     let other = 0;
@@ -796,18 +800,36 @@ function updatePurposes(){
     for (const [p,v] of totals){
       if (!topPurposes.includes(p)) other += v;
     }
-    if (other > 0){
-      series.push({purpose:"other", amount:other});
-    }
+    if (other>0) series.push({purpose:"other", amount: other});
   } else {
-    d3.select("#vis2Hint").text("Select a flow or a country in the network view to see purpose composition.");
-    d3.select("#vis2Empty").style("display","block");
-    return;
+    title = "Global main development purposes";
+    const totals = d3.rollup(
+      base,
+      v => d3.sum(v, d => d.amount),
+      d => d.purpose
+    );
+
+    let other = 0;
+    series = topPurposes.map(p => ({
+      purpose: p,
+      amount: totals.get(p) || 0
+    }));
+
+    for (const [p, v] of totals) {
+      if (!topPurposes.includes(p)) other += v;
+    }
+    if (other > 0) {
+      series.push({ purpose: "other", amount: other });
+    }
   }
 
+  // sort purposes by amount (descending) for the stacked bar
+  series.sort((a, b) => d3.descending(a.amount, b.amount));
+
+  d3.select("#vis2Hint").text(title);
+
   const total = d3.sum(series, d => d.amount);
-  if (!total || total <= 0){
-    d3.select("#vis2Hint").text(title);
+  if (!total || total<=0){
     g.append("text")
       .attr("x", innerW/2)
       .attr("y", innerH/2)
@@ -817,11 +839,6 @@ function updatePurposes(){
     return;
   }
 
-  d3.select("#vis2Hint").text(title);
-  d3.select("#vis2Empty").style("display","none");
-
-  series.sort((a, b) => d3.descending(a.amount, b.amount));
-
   const x = d3.scaleLinear().domain([0,total]).range([0, innerW]);
 
   const color = purposeColor || d3.scaleOrdinal()
@@ -829,10 +846,10 @@ function updatePurposes(){
     .range(d3.schemeSet2.concat(d3.schemeTableau10));
 
   let acc = 0;
-  g.selectAll("rect")
+  const rects = g.selectAll("rect")
     .data(series)
     .join("rect")
-    .attr("class", "purpose-rect")  
+    .attr("class", "purpose-rect")
     .attr("x", d => { const x0 = x(acc); acc += d.amount; return x0; })
     .attr("y", innerH/2 - 20)
     .attr("width", d => x(d.amount))
@@ -844,6 +861,7 @@ function updatePurposes(){
         event,
         `<b>${d.purpose}</b><br/>${fmtUSD(d.amount)} (${fmtPct(d.amount/total)})`
       );
+
       const hoverP = d.purpose;
       svg.selectAll(".purpose-rect")
         .attr("fill-opacity", r => r.purpose === hoverP ? 1 : 0.15);
@@ -851,23 +869,25 @@ function updatePurposes(){
     .on("mousemove", moveTooltip)
     .on("mouseout", function(){
       onMouseOut();
+      // 鼠标移开时恢复“真正选中”的透明度
       applyPurposeOpacity();
     })
     .on("click", function(event, d){
       const clickedKey = (d.purpose === "other") ? "__other__" : d.purpose;
-      if (selectedPurpose === clickedKey){
+
+      if (selectedPurpose === clickedKey) {
         selectedPurpose = "__all__";
       } else {
         selectedPurpose = clickedKey;
       }
 
-      if (purposeSel && purposeSel.node()){
+      if (purposeSel && purposeSel.node()) {
         purposeSel.property("value", selectedPurpose);
       }
-
+      // 立即按新的 selectedPurpose 调透明度
+      applyPurposeOpacity();
       renderChord();
       updateTimeVis();
-      updatePurposes();
     });
 
   g.append("g")
@@ -885,9 +905,9 @@ function updatePurposes(){
     row.append("text").text(p).attr("x",14).attr("y",1).style("font-size","11px").style("fill","#cbd2dc");
   });
 
+  // ★关键：每次重画完，自动按 selectedPurpose 统一应用透明度
   applyPurposeOpacity();
 }
-
 
 /** =========================
  *  VIS 3: TIME VARIATION
